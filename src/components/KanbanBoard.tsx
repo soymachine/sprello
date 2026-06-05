@@ -13,6 +13,26 @@ interface DragState {
   cardCount: number;
 }
 
+function checkListType(dt: DataTransfer | null): boolean {
+  if (!dt) return false;
+  try {
+    for (let i = 0; i < dt.types.length; i++) {
+      if (dt.types[i] === 'application/sprello-list') return true;
+    }
+  } catch {}
+  return false;
+}
+
+function checkCardType(dt: DataTransfer | null): boolean {
+  if (!dt) return false;
+  try {
+    for (let i = 0; i < dt.types.length; i++) {
+      if (dt.types[i] === 'application/sprello-card') return true;
+    }
+  } catch {}
+  return false;
+}
+
 export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprintId: string; listId: string; cardId: string }) => void }) {
   const activeSprint = useActiveSprint();
   const { dispatch } = useKanban();
@@ -26,8 +46,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   const activeSprintRef = useRef(activeSprint);
   const listInputRef = useRef<HTMLInputElement>(null);
   const listsContainerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number>(0);
-  const pendingPosRef = useRef<{ x: number; y: number } | null>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { activeSprintRef.current = activeSprint; }, [activeSprint]);
   useEffect(() => { dragStateRef.current = dragState; }, [dragState]);
@@ -38,7 +57,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   }, [addingList]);
 
   const calcInsertIndex = useCallback((clientX: number) => {
-    if (!listsContainerRef.current) { console.log('[calcInsertIndex] no container'); return; }
+    if (!listsContainerRef.current) return;
     const containerRect = listsContainerRef.current.getBoundingClientRect();
     const localX = clientX - containerRect.left;
     const children = listsContainerRef.current.children;
@@ -63,88 +82,21 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       }
     }
 
+    const totalChildren = children.length;
+    if (totalChildren === 0 || (totalChildren === 1 && (children[0] as HTMLElement)?.dataset?.listId === ds?.listId)) {
+      bestIndex = 0;
+    }
+
     setInsertIndex(bestIndex);
   }, []);
 
+  // Handle dragend for list reordering (fires on the dragged element, bubbles to document)
   useEffect(() => {
-    console.log('[KanbanBoard] Setting up document drag listeners');
-
-    const handleDragStartDoc = (e: DragEvent) => {
-      const dt = e.dataTransfer;
-      if (!dt) return;
-      const types: string[] = [];
-      for (let i = 0; i < dt.types.length; i++) types.push(dt.types[i]);
-      console.log('[doc:dragstart] types:', types);
-    };
-
-    const handleDragDoc = (e: DragEvent) => {
-      const dt = e.dataTransfer;
-      if (!dt) return;
-      const hasType = dt.types && Array.from(dt.types).includes('application/sprello-list');
-      if (!hasType) return;
-
-      console.log('[doc:drag]', e.clientX, e.clientY);
-
-      pendingPosRef.current = { x: e.clientX, y: e.clientY };
-      calcInsertIndex(e.clientX);
-
-      if (!rafRef.current) {
-        rafRef.current = requestAnimationFrame(() => {
-          rafRef.current = 0;
-          const pos = pendingPosRef.current;
-          if (!pos) return;
-          setDragState(prev => {
-            if (!prev) return null;
-            return { ...prev, mouseX: pos.x, mouseY: pos.y };
-          });
-        });
-      }
-    };
-
-    const handleDragOverDoc = (e: DragEvent) => {
-      const dt = e.dataTransfer;
-      if (!dt) return;
-      let hasType = false;
-      try {
-        const arr = Array.from(dt.types);
-        hasType = arr.includes('application/sprello-list');
-      } catch {
-        for (let i = 0; i < dt.types.length; i++) {
-          if (dt.types[i] === 'application/sprello-list') { hasType = true; break; }
-        }
-      }
-      if (!hasType) return;
-      e.preventDefault();
-
-      console.log('[doc:dragover]', e.clientX, e.clientY);
-
-      pendingPosRef.current = { x: e.clientX, y: e.clientY };
-      calcInsertIndex(e.clientX);
-
-      if (!rafRef.current) {
-        rafRef.current = requestAnimationFrame(() => {
-          rafRef.current = 0;
-          const pos = pendingPosRef.current;
-          if (!pos) return;
-          setDragState(prev => {
-            if (!prev) return null;
-            return { ...prev, mouseX: pos.x, mouseY: pos.y };
-          });
-        });
-      }
-    };
-
-    const handleDragEndDoc = () => {
-      console.log('[doc:dragend]');
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = 0;
-      }
+    const onDragEnd = () => {
       const ds = dragStateRef.current;
       const idx = insertIndexRef.current;
       const sprint = activeSprintRef.current;
       if (ds && idx !== null && sprint) {
-        console.log('[doc:dragend] moving list', ds.listId, 'to index', idx);
         dispatch({
           type: 'MOVE_LIST',
           payload: { sprintId: sprint.id, listId: ds.listId, toIndex: idx },
@@ -152,20 +104,10 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       }
       setDragState(null);
       setInsertIndex(null);
-      pendingPosRef.current = null;
     };
-
-    document.addEventListener('drag', handleDragDoc);
-    document.addEventListener('dragover', handleDragOverDoc);
-    document.addEventListener('dragend', handleDragEndDoc);
-    return () => {
-      console.log('[KanbanBoard] removing document drag listeners');
-      document.removeEventListener('drag', handleDragDoc);
-      document.removeEventListener('dragover', handleDragOverDoc);
-      document.removeEventListener('dragend', handleDragEndDoc);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [dispatch, calcInsertIndex]);
+    document.addEventListener('dragend', onDragEnd);
+    return () => document.removeEventListener('dragend', onDragEnd);
+  }, [dispatch]);
 
   if (!activeSprint) {
     return (
@@ -192,10 +134,10 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
 
   const startListDrag = (listId: string, listName: string, cardCount: number, e: React.DragEvent) => {
     console.log('[startListDrag]', { listId, listName, cardCount, clientX: e.clientX, clientY: e.clientY });
-    const el = e.currentTarget.closest('[data-list-id]') as HTMLElement;
-    if (!el) { console.log('[startListDrag] no parent element found'); return; }
+    const el = (e.currentTarget as HTMLElement).closest('[data-list-id]') as HTMLElement;
+    if (!el) return;
     const rect = el.getBoundingClientRect();
-    const state: DragState = {
+    setDragState({
       listId,
       mouseX: e.clientX,
       mouseY: e.clientY,
@@ -204,21 +146,39 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       offsetY: e.clientY - rect.top,
       listName,
       cardCount,
-    };
-    console.log('[startListDrag] dragState:', state);
-    setDragState(state);
+    });
   };
 
-  const handleCardDragOver = (e: React.DragEvent) => {
-    if (dragStateRef.current) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+  const handleDragOver = (e: React.DragEvent) => {
+    const dt = e.dataTransfer;
+
+    if (checkListType(dt)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+
+      console.log('[board:dragover-list]', e.clientX, e.clientY);
+      setDragState(prev => prev ? { ...prev, mouseX: e.clientX, mouseY: e.clientY } : null);
+      calcInsertIndex(e.clientX);
+      return;
+    }
+
+    if (checkCardType(dt)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      return;
+    }
   };
 
-  const handleDropOnBoard = (e: React.DragEvent) => {
-    if (dragStateRef.current) return;
+  const handleDrop = (e: React.DragEvent) => {
+    const dt = e.dataTransfer;
+
+    if (checkListType(dt)) {
+      e.preventDefault();
+      return;
+    }
+
     e.preventDefault();
-    const data = e.dataTransfer.getData('application/sprello-card');
+    const data = dt.getData('application/sprello-card');
     if (!data) return;
     try {
       const { sprintId, listId, cardId } = JSON.parse(data);
@@ -275,9 +235,10 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
 
   return (
     <main
+      ref={boardRef}
       className="flex-1 overflow-x-auto overflow-y-hidden p-5 relative"
-      onDragOver={handleCardDragOver}
-      onDrop={handleDropOnBoard}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       <div ref={listsContainerRef} className="flex gap-4 h-full items-start min-h-0 pb-2">
         {renderWithInsertMarkers()}

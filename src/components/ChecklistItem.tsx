@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Task } from '../types';
 import { useKanban } from '../store/KanbanContext';
 
@@ -11,6 +11,16 @@ interface Props {
 
 export default function ChecklistItem({ sprintId, listId, cardId, task }: Props) {
   const { dispatch } = useKanban();
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(task.text);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
 
   const toggle = () => {
     dispatch({
@@ -24,6 +34,19 @@ export default function ChecklistItem({ sprintId, listId, cardId, task }: Props)
       type: 'DELETE_TASK',
       payload: { sprintId, listId, cardId, taskId: task.id },
     });
+  };
+
+  const saveEdit = () => {
+    const trimmed = text.trim();
+    if (trimmed && trimmed !== task.text) {
+      dispatch({
+        type: 'UPDATE_TASK',
+        payload: { sprintId, listId, cardId, taskId: task.id, data: { text: trimmed } },
+      });
+    } else {
+      setText(task.text);
+    }
+    setEditing(false);
   };
 
   return (
@@ -42,9 +65,29 @@ export default function ChecklistItem({ sprintId, listId, cardId, task }: Props)
           </svg>
         )}
       </button>
-      <span className={`text-sm flex-1 ${task.completed ? 'text-surface-500 line-through' : 'text-surface-200'}`}>
-        {task.text}
-      </span>
+
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onBlur={saveEdit}
+          onKeyDown={e => {
+            if (e.key === 'Enter') saveEdit();
+            if (e.key === 'Escape') { setText(task.text); setEditing(false); }
+          }}
+          className="flex-1 bg-surface-700 rounded px-2 py-0.5 text-sm outline-none border border-primary-500/30"
+        />
+      ) : (
+        <span
+          className={`text-sm flex-1 cursor-pointer ${task.completed ? 'text-surface-500 line-through' : 'text-surface-200'}`}
+          onDoubleClick={() => setEditing(true)}
+          title="Doble clic para editar"
+        >
+          {task.text}
+        </span>
+      )}
+
       <button
         onClick={deleteTask}
         className="opacity-0 group-hover:opacity-100 text-surface-500 hover:text-red-400 transition-all"

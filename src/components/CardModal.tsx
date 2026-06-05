@@ -180,6 +180,52 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
         </div>
 
         <div className="px-6 py-4 space-y-6">
+          {/* Description */}
+          <section>
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+              <h3 className="text-sm font-semibold text-surface-200">Descripción</h3>
+            </div>
+            {editingDesc ? (
+              <div>
+                <textarea
+                  value={editDesc}
+                  onChange={e => setEditDesc(e.target.value)}
+                  className="w-full bg-surface-700 rounded-lg px-3 py-2 text-sm outline-none border border-primary-500/30 resize-none placeholder-surface-500 min-h-[80px]"
+                  placeholder="Añade una descripción..."
+                  autoFocus
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={saveDesc}
+                    className="bg-primary-500 hover:bg-primary-400 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => { setEditingDesc(false); setEditDesc(card.description); }}
+                    className="text-surface-400 hover:text-surface-300 text-xs px-2 py-1"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => setEditingDesc(true)}
+                className="text-sm text-surface-300 cursor-pointer hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors min-h-[32px]"
+              >
+                {card.description ? (
+                  <p className="whitespace-pre-wrap">{card.description}</p>
+                ) : (
+                  <span className="text-surface-500">Añade una descripción...</span>
+                )}
+              </div>
+            )}
+          </section>
+
           {/* Checklist */}
           <section>
             <div className="flex items-center gap-2 mb-3">
@@ -239,52 +285,6 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
               >
                 + Añadir tarea
               </button>
-            )}
-          </section>
-
-          {/* Description */}
-          <section>
-            <div className="flex items-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-              </svg>
-              <h3 className="text-sm font-semibold text-surface-200">Descripción</h3>
-            </div>
-            {editingDesc ? (
-              <div>
-                <textarea
-                  value={editDesc}
-                  onChange={e => setEditDesc(e.target.value)}
-                  className="w-full bg-surface-700 rounded-lg px-3 py-2 text-sm outline-none border border-primary-500/30 resize-none placeholder-surface-500 min-h-[80px]"
-                  placeholder="Añade una descripción..."
-                  autoFocus
-                />
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={saveDesc}
-                    className="bg-primary-500 hover:bg-primary-400 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
-                  >
-                    Guardar
-                  </button>
-                  <button
-                    onClick={() => { setEditingDesc(false); setEditDesc(card.description); }}
-                    className="text-surface-400 hover:text-surface-300 text-xs px-2 py-1"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                onClick={() => setEditingDesc(true)}
-                className="text-sm text-surface-300 cursor-pointer hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors min-h-[32px]"
-              >
-                {card.description ? (
-                  <p className="whitespace-pre-wrap">{card.description}</p>
-                ) : (
-                  <span className="text-surface-500">Añade una descripción...</span>
-                )}
-              </div>
             )}
           </section>
 

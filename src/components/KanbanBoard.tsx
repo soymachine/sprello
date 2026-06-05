@@ -13,26 +13,6 @@ interface DragState {
   cardCount: number;
 }
 
-function checkListType(dt: DataTransfer | null): boolean {
-  if (!dt) return false;
-  try {
-    for (let i = 0; i < dt.types.length; i++) {
-      if (dt.types[i] === 'application/sprello-list') return true;
-    }
-  } catch {}
-  return false;
-}
-
-function checkCardType(dt: DataTransfer | null): boolean {
-  if (!dt) return false;
-  try {
-    for (let i = 0; i < dt.types.length; i++) {
-      if (dt.types[i] === 'application/sprello-card') return true;
-    }
-  } catch {}
-  return false;
-}
-
 export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprintId: string; listId: string; cardId: string }) => void }) {
   const activeSprint = useActiveSprint();
   const { dispatch } = useKanban();
@@ -55,6 +35,48 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   useEffect(() => {
     if (addingList && listInputRef.current) listInputRef.current.focus();
   }, [addingList]);
+
+  // NATIVE event listeners for debugging
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return;
+
+    const logNative = (name: string) => (e: Event) => {
+      const de = e as DragEvent;
+      const dt = de.dataTransfer;
+      if (!dt) return;
+      let types: string[] = [];
+      try { types = Array.from(dt.types); } catch {}
+      console.log(`[NATIVE:${name}]`, {
+        clientX: de.clientX, clientY: de.clientY,
+        types,
+        target: (e.target as HTMLElement)?.tagName,
+        currentTarget: (e.currentTarget as HTMLElement)?.tagName,
+      });
+    };
+
+    const onDocDragOver = (e: Event) => {
+      const de = e as DragEvent;
+      console.log('[NATIVE:doc-dragover]', de.clientX, de.clientY, 'target:', (e.target as HTMLElement)?.tagName);
+    };
+
+    const onDocDrag = (e: Event) => {
+      const de = e as DragEvent;
+      console.log('[NATIVE:doc-drag]', de.clientX, de.clientY, 'target:', (e.target as HTMLElement)?.tagName);
+    };
+
+    board.addEventListener('dragenter', logNative('board-dragenter'), false);
+    board.addEventListener('dragover', logNative('board-dragover'), false);
+    document.addEventListener('dragover', onDocDragOver, false);
+    document.addEventListener('drag', onDocDrag, false);
+
+    return () => {
+      board.removeEventListener('dragenter', logNative('board-dragenter'), false);
+      board.removeEventListener('dragover', logNative('board-dragover'), false);
+      document.removeEventListener('dragover', onDocDragOver, false);
+      document.removeEventListener('drag', onDocDrag, false);
+    };
+  }, []);
 
   const calcInsertIndex = useCallback((clientX: number) => {
     if (!listsContainerRef.current) return;
@@ -82,17 +104,12 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       }
     }
 
-    const totalChildren = children.length;
-    if (totalChildren === 0 || (totalChildren === 1 && (children[0] as HTMLElement)?.dataset?.listId === ds?.listId)) {
-      bestIndex = 0;
-    }
-
     setInsertIndex(bestIndex);
   }, []);
 
-  // Handle dragend for list reordering (fires on the dragged element, bubbles to document)
   useEffect(() => {
     const onDragEnd = () => {
+      console.log('[dragend] firing');
       const ds = dragStateRef.current;
       const idx = insertIndexRef.current;
       const sprint = activeSprintRef.current;
@@ -150,35 +167,17 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    const dt = e.dataTransfer;
-
-    if (checkListType(dt)) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-
-      console.log('[board:dragover-list]', e.clientX, e.clientY);
-      setDragState(prev => prev ? { ...prev, mouseX: e.clientX, mouseY: e.clientY } : null);
-      calcInsertIndex(e.clientX);
-      return;
-    }
-
-    if (checkCardType(dt)) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      return;
-    }
+    console.log('[REACT:dragover]', e.clientX, e.clientY, 'types:', Array.from(e.dataTransfer.types));
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragState(prev => prev ? { ...prev, mouseX: e.clientX, mouseY: e.clientY } : null);
+    calcInsertIndex(e.clientX);
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    const dt = e.dataTransfer;
-
-    if (checkListType(dt)) {
-      e.preventDefault();
-      return;
-    }
-
+    console.log('[REACT:drop]', e.clientX, e.clientY);
     e.preventDefault();
-    const data = dt.getData('application/sprello-card');
+    const data = e.dataTransfer.getData('application/sprello-card');
     if (!data) return;
     try {
       const { sprintId, listId, cardId } = JSON.parse(data);

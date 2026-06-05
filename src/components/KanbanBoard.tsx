@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useActiveSprint, useKanban, createListHelper } from '../store/KanbanContext';
 import ListColumn from './ListColumn';
 
@@ -21,6 +21,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   const [addingList, setAddingList] = useState(false);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const [markerX, setMarkerX] = useState<number>(0);
   const dragStateRef = useRef<DragState | null>(null);
   const insertIndexRef = useRef<number | null>(null);
   const activeSprintRef = useRef(activeSprint);
@@ -36,35 +37,52 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     if (addingList && listInputRef.current) listInputRef.current.focus();
   }, [addingList]);
 
-  const calcInsertIndex = useCallback((clientX: number) => {
-    if (!listsContainerRef.current) return;
+  const updateInsertPosition = (clientX: number) => {
+    const sprint = activeSprintRef.current;
+    if (!sprint || !listsContainerRef.current) return;
     const containerRect = listsContainerRef.current.getBoundingClientRect();
     const localX = clientX - containerRect.left;
-    const children = listsContainerRef.current.children;
+    const lists = sprint.lists;
     const ds = dragStateRef.current;
+    if (!ds) return;
 
-    let bestIndex = 0;
-    let bestDist = Infinity;
+    const visible: { left: number; right: number; originalIndex: number }[] = [];
 
-    for (let i = 0; i < children.length; i++) {
-      const child = children[i] as HTMLElement;
-      const listId = child.dataset.listId;
-      if (!listId || listId === ds?.listId) continue;
-      const rect = child.getBoundingClientRect();
-      const childLeft = rect.left - containerRect.left;
-      const childCenter = childLeft + rect.width / 2;
+    for (let i = 0; i < lists.length; i++) {
+      if (lists[i].id === ds.listId) continue;
+      const el = listsContainerRef.current.querySelector(`[data-list-id="${lists[i].id}"]`);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      visible.push({
+        left: rect.left - containerRect.left,
+        right: rect.right - containerRect.left,
+        originalIndex: i,
+      });
+    }
 
-      if (localX < childCenter) {
-        const dist = Math.abs(localX - childLeft);
-        if (dist < bestDist) { bestDist = dist; bestIndex = i; }
-      } else {
-        const dist = Math.abs(localX - (childLeft + rect.width));
-        if (dist < bestDist) { bestDist = dist; bestIndex = i + 1; }
+    if (visible.length === 0) {
+      setInsertIndex(0);
+      setMarkerX(0);
+      return;
+    }
+
+    let idx = visible.length;
+    let markerPos = visible[visible.length - 1].right + 4;
+
+    for (let j = 0; j < visible.length; j++) {
+      const center = (visible[j].left + visible[j].right) / 2;
+      if (localX < center) {
+        idx = j;
+        markerPos = j === 0
+          ? visible[0].left
+          : (visible[j - 1].right + visible[j].left) / 2;
+        break;
       }
     }
 
-    setInsertIndex(bestIndex);
-  }, []);
+    setInsertIndex(idx === visible.length ? lists.length : visible[idx].originalIndex);
+    setMarkerX(markerPos);
+  };
 
   useEffect(() => {
     const onDragEnd = () => {
@@ -121,6 +139,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       listName,
       cardCount,
     });
+    updateInsertPosition(e.clientX);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -129,7 +148,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     const ds = dragStateRef.current;
     if (ds) {
       setDragState(prev => prev ? { ...prev, mouseX: e.clientX, mouseY: e.clientY } : null);
-      calcInsertIndex(e.clientX);
+      updateInsertPosition(e.clientX);
     }
   };
 
@@ -149,47 +168,8 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     } catch { /* */ }
   };
 
-  const renderLists = () => {
-    const items: React.ReactNode[] = [];
-    const lists = activeSprint.lists;
-    const draggedId = dragState?.listId;
-
-    for (let i = 0; i <= lists.length; i++) {
-      if (insertIndex === i && draggedId) {
-        items.push(
-          <div key={`marker-${i}`} className="shrink-0 w-1 self-stretch flex items-center justify-center">
-            <div className="w-0.5 h-2/3 rounded-full bg-red-400/40 shadow-sm shadow-red-500/20" />
-          </div>
-        );
-      }
-
-      const list = lists[i];
-      if (!list) continue;
-
-      const isDragging = list.id === draggedId;
-
-      items.push(
-        <div key={list.id} data-list-id={isDragging ? undefined : list.id} className="shrink-0 relative">
-          <div className={isDragging ? 'invisible' : ''}>
-            <ListColumn
-              sprintId={activeSprint.id}
-              list={list}
-              onOpenCard={onOpenCard}
-              onDragStart={startListDrag}
-              isPlaceholder={false}
-            />
-          </div>
-          {isDragging && (
-            <div className="absolute inset-0 w-72 bg-surface-800/20 rounded-xl border-2 border-dashed border-surface-600/40 flex items-center justify-center pointer-events-none">
-              <span className="text-surface-500 text-xs">Moviendo...</span>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    return items;
-  };
+  const lists = activeSprint.lists;
+  const draggedId = dragState?.listId;
 
   return (
     <main
@@ -199,7 +179,27 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       onDrop={handleDrop}
     >
       <div ref={listsContainerRef} className="flex gap-4 h-full items-start min-h-0 pb-2">
-        {renderLists()}
+        {lists.map((list) => {
+          const isDragging = list.id === draggedId;
+          return (
+            <div key={list.id} data-list-id={isDragging ? undefined : list.id} className="shrink-0 relative">
+              <div className={isDragging ? 'invisible' : ''}>
+                <ListColumn
+                  sprintId={activeSprint.id}
+                  list={list}
+                  onOpenCard={onOpenCard}
+                  onDragStart={startListDrag}
+                  isPlaceholder={false}
+                />
+              </div>
+              {isDragging && (
+                <div className="absolute inset-0 w-72 bg-surface-800/20 rounded-xl border-2 border-dashed border-surface-600/40 flex items-center justify-center pointer-events-none">
+                  <span className="text-surface-500 text-xs">Moviendo...</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {addingList ? (
           <div className="w-72 shrink-0 bg-surface-800/50 rounded-xl border border-surface-700 p-4">
@@ -212,33 +212,34 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
               placeholder="Nombre de la lista"
             />
             <div className="flex gap-2 mt-3">
-              <button
-                onClick={handleAddList}
-                className="bg-primary-500 hover:bg-primary-400 text-white text-xs px-4 py-1.5 rounded-lg font-medium transition-colors"
-              >
-                Añadir
-              </button>
-              <button
-                onClick={() => { setAddingList(false); setNewListName(''); }}
-                className="text-surface-400 hover:text-surface-300 text-xs px-3 py-1.5"
-              >
-                Cancelar
-              </button>
+              <button onClick={handleAddList} className="bg-primary-500 hover:bg-primary-400 text-white text-xs px-4 py-1.5 rounded-lg font-medium transition-colors">Añadir</button>
+              <button onClick={() => { setAddingList(false); setNewListName(''); }} className="text-surface-400 hover:text-surface-300 text-xs px-3 py-1.5">Cancelar</button>
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setAddingList(true)}
-            className="w-72 shrink-0 bg-surface-800/20 hover:bg-surface-800/40 border border-dashed border-surface-600 hover:border-surface-500 rounded-xl p-4 text-surface-400 hover:text-surface-300 text-sm font-medium transition-all flex items-center justify-center gap-2 mt-0.5"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+          <button onClick={() => setAddingList(true)} className="w-72 shrink-0 bg-surface-800/20 hover:bg-surface-800/40 border border-dashed border-surface-600 hover:border-surface-500 rounded-xl p-4 text-surface-400 hover:text-surface-300 text-sm font-medium transition-all flex items-center justify-center gap-2 mt-0.5">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             Añadir lista
           </button>
         )}
       </div>
 
+      {/* Absolutely-positioned insertion marker - outside flex flow */}
+      {dragState && insertIndex !== null && (
+        <div
+          className="absolute pointer-events-none z-50"
+          style={{
+            left: markerX - 7,
+            top: 60,
+          }}
+        >
+          <svg className="w-3.5 h-3.5 text-red-400/50 drop-shadow-sm" viewBox="0 0 14 14" fill="currentColor">
+            <path d="M7 14L0 0h14L7 14z" />
+          </svg>
+        </div>
+      )}
+
+      {/* Floating ghost */}
       {dragState && (
         <div
           className="fixed pointer-events-none z-[200]"

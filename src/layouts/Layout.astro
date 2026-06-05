@@ -1,8 +1,9 @@
 ---
+import '../styles/theme.css';
 import '../styles/datepicker.css';
 ---
 <!doctype html>
-<html lang="es">
+<html lang="es" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,7 +13,7 @@ import '../styles/datepicker.css';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <title>Sprello - Kanban por Sprints</title>
   </head>
-  <body class="m-0 p-0 antialiased">
+  <body class="m-0 p-0 antialiased bg-surface-950 text-surface-50">
     <slot />
   </body>
 </html>

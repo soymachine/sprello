@@ -53,7 +53,7 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
   if (!card) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-        <div className="text-white text-lg">Tarjeta no encontrada</div>
+        <div className="text-surface-50 text-lg">Tarjeta no encontrada</div>
       </div>
     );
   }
@@ -126,8 +126,7 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
     >
       <div
         ref={modalRef}
-        className="bg-surface-850 border border-surface-700 rounded-2xl w-full max-w-2xl shadow-2xl shadow-black/40 mx-4 mb-8 overflow-hidden"
-        style={{ backgroundColor: '#1a1f2e' }}
+        className="bg-surface-800 border border-surface-700 rounded-2xl w-full max-w-2xl shadow-2xl shadow-black/40 mx-4 mb-8 overflow-hidden"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-surface-700/50 flex items-start gap-4">
@@ -171,7 +170,7 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
             </button>
             <button
               onClick={onClose}
-              className="text-surface-400 hover:text-white p-1.5 rounded-lg hover:bg-surface-700 transition-colors"
+              className="text-surface-400 hover:text-surface-50 p-1.5 rounded-lg hover:bg-surface-700 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

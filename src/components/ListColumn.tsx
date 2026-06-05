@@ -130,7 +130,7 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
         ) : (
           <button
             onDoubleClick={() => setEditingName(true)}
-            className="text-sm font-semibold text-surface-200 hover:text-white truncate flex-1 text-left px-1"
+            className="text-sm font-semibold text-surface-200 hover:text-surface-50 truncate flex-1 text-left px-1"
             title="Doble clic para renombrar"
           >
             {list.name}

@@ -48,11 +48,3 @@
 .react-datepicker-popper {
   z-index: 100 !important;
 }
-.dark .react-datepicker__input-container input {
-  background: transparent !important;
-  color: #e2e8f0 !important;
-  font-size: 0.75rem !important;
-  outline: none !important;
-  width: 100% !important;
-  padding: 0.125rem 0 !important;
-}

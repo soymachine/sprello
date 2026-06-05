@@ -51,6 +51,7 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/sprello-list')) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOver(true);
@@ -63,6 +64,7 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
   };
 
   const handleDrop = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/sprello-list')) return;
     e.preventDefault();
     setDragOver(false);
     const data = e.dataTransfer.getData('application/sprello-card');
@@ -72,19 +74,18 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
       if (fromList === list.id) return;
       dispatch({
         type: 'MOVE_CARD',
-        payload: {
-          sprintId,
-          fromListId: fromList,
-          toListId: list.id,
-          cardId,
-          toIndex: list.cards.length,
-        },
+        payload: { sprintId, fromListId: fromList, toListId: list.id, cardId, toIndex: list.cards.length },
       });
     } catch { /* */ }
   };
 
   const deleteList = () => {
     dispatch({ type: 'DELETE_LIST', payload: { sprintId, listId: list.id } });
+  };
+
+  const handleListDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/sprello-list', JSON.stringify({ listId: list.id }));
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const completedCards = list.cards.filter(c =>
@@ -103,7 +104,17 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="flex items-center justify-between px-3 pt-3 pb-2">
+      <div className="flex items-center gap-1 px-3 pt-3 pb-2">
+        <div
+          draggable
+          onDragStart={handleListDragStart}
+          className="cursor-grab active:cursor-grabbing text-surface-500 hover:text-surface-300 transition-colors p-0.5 rounded hover:bg-surface-700/50 shrink-0"
+          title="Arrastrar para reordenar"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 18a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 18a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
+          </svg>
+        </div>
         {editingName ? (
           <input
             ref={nameInputRef}
@@ -114,7 +125,7 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
               if (e.key === 'Enter') handleSaveName();
               if (e.key === 'Escape') { setName(list.name); setEditingName(false); }
             }}
-            className="bg-surface-700 rounded px-2 py-1 text-sm font-medium outline-none border border-primary-500/50 flex-1"
+            className="bg-surface-700 rounded px-2 py-1 text-sm font-semibold outline-none border border-primary-500/50 flex-1"
           />
         ) : (
           <button
@@ -125,13 +136,13 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
             {list.name}
           </button>
         )}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <span className="text-xs text-surface-500 bg-surface-700 rounded-full px-1.5 py-0.5">
             {list.cards.length}
           </span>
           <button
             onClick={deleteList}
-            className="text-surface-500 hover:text-red-400 text-sm px-0.5 transition-colors"
+            className="text-surface-500 hover:text-red-400 text-sm px-1 py-0.5 transition-colors"
             title="Eliminar lista"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

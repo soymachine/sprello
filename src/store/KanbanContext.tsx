@@ -26,6 +26,7 @@ type Action =
   | { type: 'SET_ACTIVE_SPRINT'; payload: string | null }
   | { type: 'ADD_LIST'; payload: { sprintId: string; list: List } }
   | { type: 'DELETE_LIST'; payload: { sprintId: string; listId: string } }
+  | { type: 'MOVE_LIST'; payload: { sprintId: string; listId: string; toIndex: number } }
   | { type: 'UPDATE_LIST'; payload: { sprintId: string; listId: string; name: string } }
   | { type: 'ADD_CARD'; payload: { sprintId: string; listId: string; card: Card } }
   | { type: 'UPDATE_CARD'; payload: { sprintId: string; listId: string; cardId: string; data: Partial<Card> } }
@@ -79,7 +80,7 @@ function reducer(state: KanbanState, action: Action): KanbanState {
         ),
       };
 
-    case 'DELETE_LIST':
+    case 'DELETE_LIST': {
       return {
         ...state,
         sprints: state.sprints.map(s =>
@@ -88,6 +89,23 @@ function reducer(state: KanbanState, action: Action): KanbanState {
             : s
         ),
       };
+    }
+
+    case 'MOVE_LIST': {
+      const sprint = state.sprints.find(s => s.id === action.payload.sprintId);
+      if (!sprint) return state;
+      const idx = sprint.lists.findIndex(l => l.id === action.payload.listId);
+      if (idx === -1) return state;
+      const newLists = [...sprint.lists];
+      const [moved] = newLists.splice(idx, 1);
+      newLists.splice(action.payload.toIndex, 0, moved);
+      return {
+        ...state,
+        sprints: state.sprints.map(s =>
+          s.id === action.payload.sprintId ? { ...s, lists: newLists } : s
+        ),
+      };
+    }
 
     case 'UPDATE_LIST':
       return {

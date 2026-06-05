@@ -170,19 +170,8 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   };
 
   const handleDrop = (e: React.DragEvent) => {
+    // Card drops on the board (outside lists) are cancelled — card returns to origin
     e.preventDefault();
-    const data = e.dataTransfer.getData('application/sprello-card');
-    if (!data) return;
-    try {
-      const { sprintId, listId, cardId } = JSON.parse(data);
-      if (sprintId !== activeSprint.id) return;
-      if (!activeSprint.lists.length) return;
-      const targetListId = activeSprint.lists[0].id;
-      dispatch({
-        type: 'MOVE_CARD',
-        payload: { sprintId: activeSprint.id, fromListId: listId, toListId: targetListId, cardId, toIndex: 0 },
-      });
-    } catch { /* */ }
   };
 
   const lists = activeSprint.lists;

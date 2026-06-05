@@ -144,7 +144,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     const el = (e.currentTarget as HTMLElement).closest('[data-list-id]') as HTMLElement;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    setDragState({
+    const state: DragState = {
       listId,
       mouseX: e.clientX,
       mouseY: e.clientY,
@@ -153,7 +153,9 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       offsetY: e.clientY - rect.top,
       listName,
       cardCount,
-    });
+    };
+    dragStateRef.current = state;
+    setDragState(state);
     updateInsertPosition(e.clientX);
   };
 

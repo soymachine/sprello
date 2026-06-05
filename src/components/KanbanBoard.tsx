@@ -22,6 +22,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [markerX, setMarkerX] = useState<number>(0);
+  const [markerY, setMarkerY] = useState<number>(0);
   const dragStateRef = useRef<DragState | null>(null);
   const insertIndexRef = useRef<number | null>(null);
   const activeSprintRef = useRef(activeSprint);
@@ -46,7 +47,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     const ds = dragStateRef.current;
     if (!ds) return;
 
-    const visible: { left: number; right: number; originalIndex: number }[] = [];
+    const visible: { left: number; right: number; top: number; originalIndex: number }[] = [];
 
     for (let i = 0; i < lists.length; i++) {
       if (lists[i].id === ds.listId) continue;
@@ -56,6 +57,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       visible.push({
         left: rect.left - containerRect.left,
         right: rect.right - containerRect.left,
+        top: rect.top - containerRect.top,
         originalIndex: i,
       });
     }
@@ -63,24 +65,36 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     if (visible.length === 0) {
       setInsertIndex(0);
       setMarkerX(0);
+      setMarkerY(48);
       return;
     }
 
+    const gap = 16;
+    const halfGap = gap / 2;
+
     let idx = visible.length;
-    let markerPos = visible[visible.length - 1].right + 4;
+    let markerPos: number;
+    let yPos = visible[0].top + 48;
+
+    setMarkerY(yPos);
 
     for (let j = 0; j < visible.length; j++) {
       const center = (visible[j].left + visible[j].right) / 2;
       if (localX < center) {
         idx = j;
-        markerPos = j === 0
-          ? visible[0].left
-          : (visible[j - 1].right + visible[j].left) / 2;
-        break;
+        if (j === 0) {
+          markerPos = visible[0].left - halfGap;
+        } else {
+          markerPos = (visible[j - 1].right + visible[j].left) / 2;
+        }
+        setInsertIndex(visible[idx].originalIndex);
+        setMarkerX(markerPos);
+        return;
       }
     }
 
-    setInsertIndex(idx === visible.length ? lists.length : visible[idx].originalIndex);
+    markerPos = visible[visible.length - 1].right + halfGap;
+    setInsertIndex(lists.length);
     setMarkerX(markerPos);
   };
 
@@ -227,14 +241,15 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       {/* Absolutely-positioned insertion marker - outside flex flow */}
       {dragState && insertIndex !== null && (
         <div
-          className="absolute pointer-events-none z-50"
+          className="absolute pointer-events-none z-50 flex flex-col items-center"
           style={{
-            left: markerX - 7,
-            top: 60,
+            left: markerX - 0.5,
+            top: markerY,
           }}
         >
-          <svg className="w-3.5 h-3.5 text-red-400/50 drop-shadow-sm" viewBox="0 0 14 14" fill="currentColor">
-            <path d="M7 14L0 0h14L7 14z" />
+          <div className="w-px h-6 bg-red-400/40" />
+          <svg className="w-3 h-3 text-red-400/40 -mt-px" viewBox="0 0 12 12" fill="currentColor">
+            <path d="M6 12L0 4h12L6 12z" />
           </svg>
         </div>
       )}

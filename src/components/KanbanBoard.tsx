@@ -9,6 +9,8 @@ interface DragState {
   width: number;
   offsetX: number;
   offsetY: number;
+  listName: string;
+  cardCount: number;
 }
 
 export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprintId: string; listId: string; cardId: string }) => void }) {
@@ -22,14 +24,12 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   const dragStateRef = useRef<DragState | null>(null);
   const insertIndexRef = useRef<number | null>(null);
   const activeSprintRef = useRef(activeSprint);
-  const listsRef = useRef(activeSprint?.lists ?? []);
   const listInputRef = useRef<HTMLInputElement>(null);
   const listsContainerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
-  const pendingPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const pendingPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => { activeSprintRef.current = activeSprint; }, [activeSprint]);
-  useEffect(() => { listsRef.current = activeSprint?.lists ?? []; }, [activeSprint]);
   useEffect(() => { dragStateRef.current = dragState; }, [dragState]);
   useEffect(() => { insertIndexRef.current = insertIndex; }, [insertIndex]);
 
@@ -37,13 +37,12 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     if (addingList && listInputRef.current) listInputRef.current.focus();
   }, [addingList]);
 
-  const calcInsertIndex = useCallback((mouseX: number) => {
-    if (!listsContainerRef.current) return;
+  const calcInsertIndex = useCallback((clientX: number) => {
+    if (!listsContainerRef.current) { console.log('[calcInsertIndex] no container'); return; }
     const containerRect = listsContainerRef.current.getBoundingClientRect();
-    const localX = mouseX - containerRect.left;
+    const localX = clientX - containerRect.left;
     const children = listsContainerRef.current.children;
     const ds = dragStateRef.current;
-    const lists = listsRef.current;
 
     let bestIndex = 0;
     let bestDist = Infinity;
@@ -64,38 +63,35 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       }
     }
 
-    if (children.length === 0 || (children.length === 1 && (children[0] as HTMLElement)?.dataset?.listId === ds?.listId)) {
-      bestIndex = 0;
-    }
-
     setInsertIndex(bestIndex);
   }, []);
 
   useEffect(() => {
-    const hasListType = (dt: DataTransfer | null) => {
-      if (!dt) return false;
-      try {
-        const types = dt.types;
-        if (typeof (types as any).includes === 'function') return (types as any).includes('application/sprello-list');
-        if (typeof (types as any).contains === 'function') return (types as any).contains('application/sprello-list');
-        for (let i = 0; i < types.length; i++) {
-          if (types[i] === 'application/sprello-list') return true;
-        }
-      } catch {}
-      return false;
+    console.log('[KanbanBoard] Setting up document drag listeners');
+
+    const handleDragStartDoc = (e: DragEvent) => {
+      const dt = e.dataTransfer;
+      if (!dt) return;
+      const types: string[] = [];
+      for (let i = 0; i < dt.types.length; i++) types.push(dt.types[i]);
+      console.log('[doc:dragstart] types:', types);
     };
 
-    const handleDocDragOver = (e: DragEvent) => {
-      if (!hasListType(e.dataTransfer)) return;
-      e.preventDefault();
+    const handleDragDoc = (e: DragEvent) => {
+      const dt = e.dataTransfer;
+      if (!dt) return;
+      const hasType = dt.types && Array.from(dt.types).includes('application/sprello-list');
+      if (!hasType) return;
 
-      pendingPositionRef.current = { x: e.clientX, y: e.clientY };
+      console.log('[doc:drag]', e.clientX, e.clientY);
+
+      pendingPosRef.current = { x: e.clientX, y: e.clientY };
       calcInsertIndex(e.clientX);
 
       if (!rafRef.current) {
         rafRef.current = requestAnimationFrame(() => {
           rafRef.current = 0;
-          const pos = pendingPositionRef.current;
+          const pos = pendingPosRef.current;
           if (!pos) return;
           setDragState(prev => {
             if (!prev) return null;
@@ -105,7 +101,41 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       }
     };
 
-    const handleDocDragEnd = () => {
+    const handleDragOverDoc = (e: DragEvent) => {
+      const dt = e.dataTransfer;
+      if (!dt) return;
+      let hasType = false;
+      try {
+        const arr = Array.from(dt.types);
+        hasType = arr.includes('application/sprello-list');
+      } catch {
+        for (let i = 0; i < dt.types.length; i++) {
+          if (dt.types[i] === 'application/sprello-list') { hasType = true; break; }
+        }
+      }
+      if (!hasType) return;
+      e.preventDefault();
+
+      console.log('[doc:dragover]', e.clientX, e.clientY);
+
+      pendingPosRef.current = { x: e.clientX, y: e.clientY };
+      calcInsertIndex(e.clientX);
+
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = 0;
+          const pos = pendingPosRef.current;
+          if (!pos) return;
+          setDragState(prev => {
+            if (!prev) return null;
+            return { ...prev, mouseX: pos.x, mouseY: pos.y };
+          });
+        });
+      }
+    };
+
+    const handleDragEndDoc = () => {
+      console.log('[doc:dragend]');
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = 0;
@@ -114,6 +144,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       const idx = insertIndexRef.current;
       const sprint = activeSprintRef.current;
       if (ds && idx !== null && sprint) {
+        console.log('[doc:dragend] moving list', ds.listId, 'to index', idx);
         dispatch({
           type: 'MOVE_LIST',
           payload: { sprintId: sprint.id, listId: ds.listId, toIndex: idx },
@@ -121,14 +152,17 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       }
       setDragState(null);
       setInsertIndex(null);
-      pendingPositionRef.current = null;
+      pendingPosRef.current = null;
     };
 
-    document.addEventListener('dragover', handleDocDragOver);
-    document.addEventListener('dragend', handleDocDragEnd);
+    document.addEventListener('drag', handleDragDoc);
+    document.addEventListener('dragover', handleDragOverDoc);
+    document.addEventListener('dragend', handleDragEndDoc);
     return () => {
-      document.removeEventListener('dragover', handleDocDragOver);
-      document.removeEventListener('dragend', handleDocDragEnd);
+      console.log('[KanbanBoard] removing document drag listeners');
+      document.removeEventListener('drag', handleDragDoc);
+      document.removeEventListener('dragover', handleDragOverDoc);
+      document.removeEventListener('dragend', handleDragEndDoc);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [dispatch, calcInsertIndex]);
@@ -156,18 +190,23 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     setAddingList(false);
   };
 
-  const startListDrag = (listId: string, e: React.DragEvent) => {
+  const startListDrag = (listId: string, listName: string, cardCount: number, e: React.DragEvent) => {
+    console.log('[startListDrag]', { listId, listName, cardCount, clientX: e.clientX, clientY: e.clientY });
     const el = e.currentTarget.closest('[data-list-id]') as HTMLElement;
-    if (!el) return;
+    if (!el) { console.log('[startListDrag] no parent element found'); return; }
     const rect = el.getBoundingClientRect();
-    setDragState({
+    const state: DragState = {
       listId,
       mouseX: e.clientX,
       mouseY: e.clientY,
       width: rect.width,
       offsetX: e.clientX - rect.left,
       offsetY: e.clientY - rect.top,
-    });
+      listName,
+      cardCount,
+    };
+    console.log('[startListDrag] dragState:', state);
+    setDragState(state);
   };
 
   const handleCardDragOver = (e: React.DragEvent) => {
@@ -292,12 +331,30 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
             opacity: 0.5,
           }}
         >
-          <div className="w-full bg-surface-800 border-2 border-primary-400/50 rounded-xl shadow-2xl shadow-primary-500/20 p-3">
-            <div className="h-3 bg-surface-600 rounded w-2/3 mb-2" />
-            <div className="space-y-1.5">
-              <div className="h-10 bg-surface-700/80 rounded-lg" />
-              <div className="h-10 bg-surface-700/80 rounded-lg" />
-              <div className="h-10 bg-surface-700/80 rounded-lg w-4/5" />
+          <div className="w-full bg-surface-800 border-2 border-primary-400/50 rounded-xl shadow-2xl shadow-primary-500/20 overflow-hidden">
+            <div className="px-3 pt-3 pb-2 flex items-center gap-1">
+              <div className="w-4 h-4 text-surface-500 flex items-center">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 18a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 18a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
+                </svg>
+              </div>
+              <div className="text-sm font-semibold text-surface-200 truncate">{dragState.listName}</div>
+              <div className="text-xs text-surface-500 bg-surface-700 rounded-full px-1.5 py-0.5 ml-auto">{dragState.cardCount}</div>
+            </div>
+            <div className="px-3 pb-3 space-y-2">
+              {Array.from({ length: Math.min(dragState.cardCount, 4) }).map((_, i) => (
+                <div key={i} className="bg-surface-700/80 rounded-lg px-3 py-2.5">
+                  <div className={`h-2 bg-surface-500/40 rounded ${i % 2 === 0 ? 'w-full' : 'w-3/4'}`} />
+                </div>
+              ))}
+            </div>
+            <div className="px-3 pb-3">
+              <div className="text-sm text-surface-500 flex items-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Añadir tarjeta
+              </div>
             </div>
           </div>
         </div>

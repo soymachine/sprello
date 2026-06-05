@@ -7,7 +7,7 @@ interface Props {
   sprintId: string;
   list: List;
   onOpenCard: (data: { sprintId: string; listId: string; cardId: string }) => void;
-  onDragStart?: (listId: string, e: React.DragEvent) => void;
+  onDragStart?: (listId: string, listName: string, cardCount: number, e: React.DragEvent) => void;
   isPlaceholder: boolean;
 }
 
@@ -91,7 +91,7 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
     const img = new Image();
     img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
     e.dataTransfer.setDragImage(img, 0, 0);
-    onDragStart?.(list.id, e);
+    onDragStart?.(list.id, list.name, list.cards.length, e);
   };
 
   const handleListDragEnd = () => {

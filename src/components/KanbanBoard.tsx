@@ -242,14 +242,14 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       {/* Absolutely-positioned insertion marker - outside flex flow */}
       {dragState && insertIndex !== null && (
         <div
-          className="absolute pointer-events-none z-50 flex flex-col items-center"
+          className="absolute pointer-events-none z-50 flex flex-col"
           style={{
-            left: markerX - 0.5,
+            left: markerX,
             top: markerY,
           }}
         >
           <div className="w-px h-6 bg-red-400/40" />
-          <svg className="w-3 h-3 text-red-400/40" style={{ marginTop: -1 }} viewBox="0 0 12 12" fill="currentColor">
+          <svg className="w-3 h-3 text-red-400/40 -ml-[5px]" style={{ marginTop: -1 }} viewBox="0 0 12 12" fill="currentColor">
             <path d="M6 12L0 0h12L6 12z" />
           </svg>
         </div>

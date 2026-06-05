@@ -88,7 +88,9 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
   const handleListDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/sprello-list', JSON.stringify({ listId: list.id }));
     e.dataTransfer.effectAllowed = 'move';
-    // skip setDragImage for debugging
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
+    e.dataTransfer.setDragImage(img, 0, 0);
     onDragStart?.(list.id, list.name, list.cards.length, e);
   };
 

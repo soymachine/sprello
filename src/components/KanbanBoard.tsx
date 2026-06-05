@@ -40,9 +40,10 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
 
   const updateInsertPosition = (clientX: number) => {
     const sprint = activeSprintRef.current;
-    if (!sprint || !listsContainerRef.current) return;
+    if (!sprint || !listsContainerRef.current || !boardRef.current) return;
     const containerRect = listsContainerRef.current.getBoundingClientRect();
     const localX = clientX - containerRect.left;
+    const scrollLeft = boardRef.current.scrollLeft;
     const lists = sprint.lists;
     const ds = dragStateRef.current;
     if (!ds) return;
@@ -64,8 +65,8 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
 
     if (visible.length === 0) {
       setInsertIndex(0);
-      setMarkerX(0);
-      setMarkerY(48);
+      setMarkerX(-scrollLeft);
+      setMarkerY(40);
       return;
     }
 
@@ -88,14 +89,14 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
           markerPos = (visible[j - 1].right + visible[j].left) / 2;
         }
         setInsertIndex(visible[idx].originalIndex);
-        setMarkerX(markerPos);
+        setMarkerX(markerPos - scrollLeft);
         return;
       }
     }
 
     markerPos = visible[visible.length - 1].right + halfGap;
     setInsertIndex(lists.length);
-    setMarkerX(markerPos);
+    setMarkerX(markerPos - scrollLeft);
   };
 
   useEffect(() => {

@@ -2,19 +2,101 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useActiveSprint, useKanban, createListHelper } from '../store/KanbanContext';
 import ListColumn from './ListColumn';
 
+interface DragState {
+  listId: string;
+  mouseX: number;
+  mouseY: number;
+  width: number;
+  height: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprintId: string; listId: string; cardId: string }) => void }) {
   const activeSprint = useActiveSprint();
   const { dispatch } = useKanban();
 
   const [newListName, setNewListName] = useState('');
   const [addingList, setAddingList] = useState(false);
-  const [dragOverListId, setDragOverListId] = useState<string | null>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
+  const dragStateRef = useRef<DragState | null>(null);
+  const insertIndexRef = useRef<number | null>(null);
   const listInputRef = useRef<HTMLInputElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const listsContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dragStateRef.current = dragState;
+  }, [dragState]);
+
+  useEffect(() => {
+    insertIndexRef.current = insertIndex;
+  }, [insertIndex]);
+
+  useEffect(() => {
+    const handleDragEnd = () => {
+      const ds = dragStateRef.current;
+      const idx = insertIndexRef.current;
+      const sprint = activeSprint;
+      if (ds && idx !== null && sprint) {
+        dispatch({
+          type: 'MOVE_LIST',
+          payload: { sprintId: sprint.id, listId: ds.listId, toIndex: idx },
+        });
+      }
+      setDragState(null);
+      setInsertIndex(null);
+    };
+    document.addEventListener('dragend', handleDragEnd);
+    return () => document.removeEventListener('dragend', handleDragEnd);
+  }, [dispatch]);
 
   useEffect(() => {
     if (addingList && listInputRef.current) listInputRef.current.focus();
   }, [addingList]);
+
+  const handleDragOverBoard = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const types = e.dataTransfer.types;
+    if (!types.includes('application/sprello-list')) return;
+
+    if (dragState) {
+      setDragState(prev => prev ? { ...prev, mouseX: e.clientX, mouseY: e.clientY } : null);
+    }
+
+    if (!listsContainerRef.current || !activeSprint) return;
+
+    const containerRect = listsContainerRef.current.getBoundingClientRect();
+    const children = listsContainerRef.current.children;
+    const mouseX = e.clientX - containerRect.left;
+
+    let bestIndex = 0;
+    let bestDist = Infinity;
+
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i] as HTMLElement;
+      if (child.dataset.listId === dragState?.listId) continue;
+      const rect = child.getBoundingClientRect();
+      const childLeft = rect.left - containerRect.left;
+      const childRight = rect.right - containerRect.left;
+      const childCenter = childLeft + rect.width / 2;
+
+      if (mouseX < childCenter) {
+        const dist = Math.abs(mouseX - childLeft);
+        if (dist < bestDist) { bestDist = dist; bestIndex = i; }
+      } else {
+        const dist = Math.abs(mouseX - childRight);
+        if (dist < bestDist) { bestDist = dist; bestIndex = i + 1; }
+      }
+    }
+
+    if (children.length === 0 || (children.length === 1 && (children[0] as HTMLElement).dataset.listId === dragState?.listId)) {
+      setInsertIndex(0);
+    } else {
+      setInsertIndex(bestIndex);
+    }
+  }, [dragState, activeSprint]);
 
   if (!activeSprint) {
     return (
@@ -39,12 +121,28 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     setAddingList(false);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const startListDrag = (listId: string, e: React.DragEvent) => {
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    setDragState({
+      listId,
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      width: rect.width,
+      height: rect.height,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+    });
+  };
+
+  const handleCardDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/sprello-list')) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDropOnBoard = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/sprello-list')) return;
     e.preventDefault();
     const data = e.dataTransfer.getData('application/sprello-card');
     if (!data) return;
@@ -60,58 +158,78 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     } catch { /* */ }
   };
 
-  const handleListDragOver = (e: React.DragEvent, targetListId: string) => {
-    const types = e.dataTransfer.types;
-    if (!types.includes('application/sprello-list')) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverListId(targetListId);
-  };
+  const isDraggedList = (listId: string) => dragState?.listId === listId;
 
-  const handleListDragLeave = (e: React.DragEvent) => {
-    const target = e.currentTarget as HTMLElement;
-    if (!target.contains(e.relatedTarget as Node)) {
-      setDragOverListId(null);
-    }
-  };
+  const lists = activeSprint.lists;
 
-  const handleListDrop = (e: React.DragEvent, targetListId: string) => {
-    e.preventDefault();
-    setDragOverListId(null);
-    const data = e.dataTransfer.getData('application/sprello-list');
-    if (!data) return;
-    try {
-      const { listId: fromListId } = JSON.parse(data);
-      const toIndex = activeSprint.lists.findIndex(l => l.id === targetListId);
-      dispatch({ type: 'MOVE_LIST', payload: { sprintId: activeSprint.id, listId: fromListId, toIndex } });
-    } catch { /* */ }
-  };
+  const renderWithInsertMarkers = () => {
+    const items: React.ReactNode[] = [];
+    const draggedId = dragState?.listId;
 
-  return (
-    <main
-      ref={boardRef}
-      className="flex-1 overflow-x-auto overflow-y-hidden p-5"
-      onDragOver={handleDragOver}
-      onDrop={handleDropOnBoard}
-    >
-      <div className="flex gap-4 h-full items-start min-h-0 pb-2">
-        {activeSprint.lists.map((list) => (
+    for (let i = 0; i <= lists.length; i++) {
+      if (insertIndex === i && draggedId) {
+        items.push(
+          <div key={`marker-${i}`} className="shrink-0 w-1 self-stretch flex items-center justify-center">
+            <div className="w-0.5 h-2/3 rounded-full bg-red-400/40 shadow-sm shadow-red-500/20" />
+          </div>
+        );
+      }
+
+      const list = lists[i];
+      if (!list) continue;
+
+      if (list.id !== draggedId) {
+        items.push(
           <div
             key={list.id}
-            onDragOver={(e) => handleListDragOver(e, list.id)}
-            onDragLeave={handleListDragLeave}
-            onDrop={(e) => handleListDrop(e, list.id)}
-            className={`shrink-0 rounded-xl transition-all ${
-              dragOverListId === list.id ? 'ring-2 ring-accent-400/50 scale-[1.02]' : ''
-            }`}
+            data-list-id={list.id}
+            className="shrink-0"
+            onDragOver={(e) => {
+              if (!e.dataTransfer.types.includes('application/sprello-list')) return;
+              // handled by board-level dragover
+            }}
+            onDrop={(e) => {
+              if (!e.dataTransfer.types.includes('application/sprello-list')) return;
+              e.preventDefault();
+            }}
           >
             <ListColumn
               sprintId={activeSprint.id}
               list={list}
               onOpenCard={onOpenCard}
+              onDragStart={startListDrag}
+              isPlaceholder={false}
             />
           </div>
-        ))}
+        );
+      } else {
+        items.push(
+          <div
+            key={list.id}
+            data-list-id={list.id}
+            className="shrink-0 w-72 h-48 bg-surface-800/20 rounded-xl border-2 border-dashed border-surface-600/40 flex items-center justify-center"
+          >
+            <span className="text-surface-500 text-xs">Moviendo...</span>
+          </div>
+        );
+      }
+    }
+
+    return items;
+  };
+
+  return (
+    <main
+      ref={boardRef}
+      className="flex-1 overflow-x-auto overflow-y-hidden p-5 relative"
+      onDragOver={(e) => {
+        handleDragOverBoard(e);
+        handleCardDragOver(e);
+      }}
+      onDrop={handleDropOnBoard}
+    >
+      <div ref={listsContainerRef} className="flex gap-4 h-full items-start min-h-0 pb-2">
+        {renderWithInsertMarkers()}
 
         {addingList ? (
           <div className="w-72 shrink-0 bg-surface-800/50 rounded-xl border border-surface-700 p-4">
@@ -150,6 +268,28 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
           </button>
         )}
       </div>
+
+      {dragState && (
+        <div
+          className="fixed pointer-events-none z-[200]"
+          style={{
+            left: dragState.mouseX - dragState.offsetX,
+            top: dragState.mouseY - dragState.offsetY,
+            width: dragState.width,
+            transform: 'rotate(20deg)',
+            opacity: 0.5,
+          }}
+        >
+          <div className="w-full bg-surface-800 border-2 border-primary-400/50 rounded-xl shadow-2xl shadow-primary-500/20 p-3">
+            <div className="h-3 bg-surface-600 rounded w-2/3 mb-2" />
+            <div className="space-y-1.5">
+              <div className="h-10 bg-surface-700/80 rounded-lg" />
+              <div className="h-10 bg-surface-700/80 rounded-lg" />
+              <div className="h-10 bg-surface-700/80 rounded-lg w-4/5" />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

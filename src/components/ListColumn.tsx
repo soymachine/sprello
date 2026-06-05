@@ -7,9 +7,11 @@ interface Props {
   sprintId: string;
   list: List;
   onOpenCard: (data: { sprintId: string; listId: string; cardId: string }) => void;
+  onDragStart?: (listId: string, e: React.DragEvent) => void;
+  isPlaceholder: boolean;
 }
 
-export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
+export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, isPlaceholder }: Props) {
   const { dispatch } = useKanban();
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(list.name);
@@ -86,6 +88,21 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
   const handleListDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('application/sprello-list', JSON.stringify({ listId: list.id }));
     e.dataTransfer.effectAllowed = 'move';
+
+    const ghost = document.createElement('div');
+    ghost.style.width = '1px';
+    ghost.style.height = '1px';
+    ghost.style.position = 'absolute';
+    ghost.style.top = '-9999px';
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, 0, 0);
+    setTimeout(() => document.body.removeChild(ghost), 0);
+
+    onDragStart?.(list.id, e);
+  };
+
+  const handleListDragEnd = () => {
+    // The board handles the drop via its own dragEnd state
   };
 
   const completedCards = list.cards.filter(c =>
@@ -108,6 +125,7 @@ export default function ListColumn({ sprintId, list, onOpenCard }: Props) {
         <div
           draggable
           onDragStart={handleListDragStart}
+          onDragEnd={handleListDragEnd}
           className="cursor-grab active:cursor-grabbing text-surface-500 hover:text-surface-300 transition-colors p-0.5 rounded hover:bg-surface-700/50 shrink-0"
           title="Arrastrar para reordenar"
         >

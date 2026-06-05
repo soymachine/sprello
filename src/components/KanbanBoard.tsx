@@ -74,7 +74,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
 
     let idx = visible.length;
     let markerPos: number;
-    let yPos = visible[0].top + 48;
+    let yPos = visible[0].top + 40;
 
     setMarkerY(yPos);
 
@@ -248,8 +248,8 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
           }}
         >
           <div className="w-px h-6 bg-red-400/40" />
-          <svg className="w-3 h-3 text-red-400/40 -mt-px" viewBox="0 0 12 12" fill="currentColor">
-            <path d="M6 12L0 4h12L6 12z" />
+          <svg className="w-3 h-3 text-red-400/40" style={{ marginTop: -1 }} viewBox="0 0 12 12" fill="currentColor">
+            <path d="M6 12L0 0h12L6 12z" />
           </svg>
         </div>
       )}

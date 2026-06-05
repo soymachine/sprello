@@ -1,8 +1,19 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, forwardRef } from 'react';
 import DatePicker from 'react-datepicker';
 import { v4 as uuidv4 } from 'uuid';
 import { useKanban } from '../store/KanbanContext';
 import type { Sprint } from '../types';
+
+const DateInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  (props, ref) => (
+    <input
+      {...props}
+      ref={ref}
+      className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-50 outline-none focus:border-primary-500/50 placeholder-surface-500"
+    />
+  )
+);
+DateInput.displayName = 'DateInput';
 
 interface Props {
   sprint?: Sprint;
@@ -102,16 +113,17 @@ export default function SprintModal({ sprint, onClose }: Props) {
 
   const dpProps = {
     dateFormat: 'dd/MM/yy',
-    className: 'bg-transparent text-sm text-surface-50 outline-none w-full',
-    wrapperClassName: 'w-full',
-  } as const;
+    customInput: <DateInput />,
+    popperPlacement: 'bottom-start' as const,
+    popperClassName: '!z-[100]',
+  };
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md shadow-2xl shadow-black/30 mx-4 overflow-hidden">
+      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md shadow-2xl shadow-black/30 mx-4">
         <div className="px-5 py-4 border-b border-surface-600/50 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-surface-50">
             {isEditing ? 'Editar Sprint' : 'Nuevo Sprint'}

@@ -20,11 +20,9 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   const [newListName, setNewListName] = useState('');
   const [addingList, setAddingList] = useState(false);
   const [dragState, setDragState] = useState<DragState | null>(null);
-  const [insertIndex, setInsertIndex] = useState<number | null>(null);
-  const [markerX, setMarkerX] = useState<number>(0);
-  const [markerY, setMarkerY] = useState<number>(0);
+  const [targetListId, setTargetListId] = useState<string | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
-  const insertIndexRef = useRef<number | null>(null);
+  const targetListIdRef = useRef<string | null>(null);
   const activeSprintRef = useRef(activeSprint);
   const listInputRef = useRef<HTMLInputElement>(null);
   const listsContainerRef = useRef<HTMLDivElement>(null);
@@ -32,86 +30,60 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
 
   useEffect(() => { activeSprintRef.current = activeSprint; }, [activeSprint]);
   useEffect(() => { dragStateRef.current = dragState; }, [dragState]);
-  useEffect(() => { insertIndexRef.current = insertIndex; }, [insertIndex]);
+  useEffect(() => { targetListIdRef.current = targetListId; }, [targetListId]);
 
   useEffect(() => {
     if (addingList && listInputRef.current) listInputRef.current.focus();
   }, [addingList]);
 
-  const updateInsertPosition = (clientX: number) => {
+  const findTargetList = (clientX: number, clientY: number) => {
     const sprint = activeSprintRef.current;
-    if (!sprint || !listsContainerRef.current || !boardRef.current) return;
-    const containerRect = listsContainerRef.current.getBoundingClientRect();
-    const localX = clientX - containerRect.left;
-    const scrollLeft = boardRef.current.scrollLeft;
-    const lists = sprint.lists;
+    if (!sprint || !listsContainerRef.current) return;
     const ds = dragStateRef.current;
     if (!ds) return;
 
-    const visible: { left: number; right: number; top: number; originalIndex: number }[] = [];
+    let targetId: string | null = null;
+    let minDist = Infinity;
 
-    for (let i = 0; i < lists.length; i++) {
-      if (lists[i].id === ds.listId) continue;
-      const el = listsContainerRef.current.querySelector(`[data-list-id="${lists[i].id}"]`);
+    for (const list of sprint.lists) {
+      if (list.id === ds.listId) continue;
+      const el = listsContainerRef.current.querySelector(`[data-list-id="${list.id}"]`);
       if (!el) continue;
       const rect = el.getBoundingClientRect();
-      visible.push({
-        left: rect.left - containerRect.left,
-        right: rect.right - containerRect.left,
-        top: rect.top - containerRect.top,
-        originalIndex: i,
-      });
-    }
 
-    if (visible.length === 0) {
-      setInsertIndex(0);
-      setMarkerX(-scrollLeft);
-      setMarkerY(40);
-      return;
-    }
+      if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+        targetId = list.id;
+        break;
+      }
 
-    const gap = 16;
-    const halfGap = gap / 2;
-
-    let idx = visible.length;
-    let markerPos: number;
-    let yPos = visible[0].top + 40;
-
-    setMarkerY(yPos);
-
-    for (let j = 0; j < visible.length; j++) {
-      const center = (visible[j].left + visible[j].right) / 2;
-      if (localX < center) {
-        idx = j;
-        if (j === 0) {
-          markerPos = visible[0].left - halfGap;
-        } else {
-          markerPos = (visible[j - 1].right + visible[j].left) / 2;
-        }
-        setInsertIndex(visible[idx].originalIndex);
-        setMarkerX(markerPos - scrollLeft);
-        return;
+      const cx = Math.max(rect.left, Math.min(clientX, rect.right));
+      const cy = Math.max(rect.top, Math.min(clientY, rect.bottom));
+      const dist = Math.hypot(clientX - cx, clientY - cy);
+      if (dist < minDist && dist < 120) {
+        minDist = dist;
+        targetId = list.id;
       }
     }
 
-    markerPos = visible[visible.length - 1].right + halfGap;
-    setInsertIndex(lists.length);
-    setMarkerX(markerPos - scrollLeft);
+    setTargetListId(targetId);
   };
 
   useEffect(() => {
     const onDragEnd = () => {
       const ds = dragStateRef.current;
-      const idx = insertIndexRef.current;
+      const targetId = targetListIdRef.current;
       const sprint = activeSprintRef.current;
-      if (ds && idx !== null && sprint) {
-        dispatch({
-          type: 'MOVE_LIST',
-          payload: { sprintId: sprint.id, listId: ds.listId, toIndex: idx },
-        });
+      if (ds && targetId && sprint) {
+        const targetIndex = sprint.lists.findIndex(l => l.id === targetId);
+        if (targetIndex !== -1) {
+          dispatch({
+            type: 'MOVE_LIST',
+            payload: { sprintId: sprint.id, listId: ds.listId, toIndex: targetIndex },
+          });
+        }
       }
       setDragState(null);
-      setInsertIndex(null);
+      setTargetListId(null);
     };
     document.addEventListener('dragend', onDragEnd);
     return () => document.removeEventListener('dragend', onDragEnd);
@@ -156,7 +128,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     };
     dragStateRef.current = state;
     setDragState(state);
-    updateInsertPosition(e.clientX);
+    findTargetList(e.clientX, e.clientY);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -165,12 +137,11 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     const ds = dragStateRef.current;
     if (ds) {
       setDragState(prev => prev ? { ...prev, mouseX: e.clientX, mouseY: e.clientY } : null);
-      updateInsertPosition(e.clientX);
+      findTargetList(e.clientX, e.clientY);
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
-    // Card drops on the board (outside lists) are cancelled — card returns to origin
     e.preventDefault();
   };
 
@@ -187,6 +158,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       <div ref={listsContainerRef} className="flex gap-4 h-full items-start min-h-0 pb-2">
         {lists.map((list) => {
           const isDragging = list.id === draggedId;
+          const isTarget = list.id === targetListId;
           return (
             <div key={list.id} data-list-id={isDragging ? undefined : list.id} className="shrink-0 relative">
               <div className={isDragging ? 'invisible' : ''}>
@@ -196,6 +168,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
                   onOpenCard={onOpenCard}
                   onDragStart={startListDrag}
                   isPlaceholder={false}
+                  isTarget={isTarget}
                 />
               </div>
               {isDragging && (
@@ -230,23 +203,6 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
         )}
       </div>
 
-      {/* Absolutely-positioned insertion marker - outside flex flow */}
-      {dragState && insertIndex !== null && (
-        <div
-          className="absolute pointer-events-none z-50 flex flex-col"
-          style={{
-            left: markerX,
-            top: markerY,
-          }}
-        >
-          <div className="w-px h-6 bg-red-400/40" />
-          <svg className="w-3 h-3 text-red-400/40 -ml-[5px]" style={{ marginTop: -1 }} viewBox="0 0 12 12" fill="currentColor">
-            <path d="M6 12L0 0h12L6 12z" />
-          </svg>
-        </div>
-      )}
-
-      {/* Floating ghost */}
       {dragState && (
         <div
           className="fixed pointer-events-none z-[200]"

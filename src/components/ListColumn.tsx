@@ -9,9 +9,10 @@ interface Props {
   onOpenCard: (data: { sprintId: string; listId: string; cardId: string }) => void;
   onDragStart?: (listId: string, listName: string, cardCount: number, e: React.DragEvent) => void;
   isPlaceholder: boolean;
+  isTarget?: boolean;
 }
 
-export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, isPlaceholder }: Props) {
+export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, isPlaceholder, isTarget }: Props) {
   const { dispatch } = useKanban();
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(list.name);
@@ -106,7 +107,9 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
     <div
       ref={listRef}
       className={`w-72 shrink-0 flex flex-col rounded-xl transition-all max-h-full ${
-        dragOver
+        isTarget
+          ? 'bg-accent-500/10 border-2 border-accent-400/60 shadow-lg shadow-accent-500/20'
+          : dragOver
           ? 'bg-primary-500/10 border-2 border-dashed border-primary-400'
           : 'bg-surface-800/40 border border-surface-700/50'
       }`}

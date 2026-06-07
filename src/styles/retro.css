@@ -6,9 +6,9 @@ body {
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: unset;
   text-rendering: optimizeSpeed;
-  image-rendering: pixelated;
 }
 
+/* Scanlines - subtle, adapts to theme */
 body::after {
   content: '';
   position: fixed;
@@ -19,14 +19,13 @@ body::after {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
+    rgba(0, 0, 0, 0.02) 2px,
+    rgba(0, 0, 0, 0.02) 4px
   );
 }
 
 input, textarea, select, button {
   font-family: inherit !important;
-  letter-spacing: 0.05em;
 }
 
 input:focus, textarea:focus, select:focus {
@@ -35,62 +34,11 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 8px rgba(0, 255, 204, 0.3);
 }
 
-input::placeholder, textarea::placeholder {
-  color: #555 !important;
-  font-style: italic;
-}
-
-/* Terminal cursor in inputs */
-input:focus::after {
-  content: '';
-  animation: cursor-blink 1s step-end infinite;
-}
-
 /* Scrollbar retro */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #111;
-  border: 1px solid #333;
-}
-::-webkit-scrollbar-thumb {
-  background: #444;
-  border: 1px solid #555;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #00ffcc;
-  border-color: #00cc99;
-}
-
-/* Beveled button base */
-.btn-retro {
-  border: 2px solid;
-  border-top-color: #666;
-  border-left-color: #666;
-  border-bottom-color: #222;
-  border-right-color: #222;
-  background: #333;
-  color: #e0e0e0;
-  font-family: inherit;
-  transition: all 0.1s;
-}
-.btn-retro:active {
-  border-top-color: #222;
-  border-left-color: #222;
-  border-bottom-color: #666;
-  border-right-color: #666;
-  background: #2a2a2a;
-}
-.btn-retro:hover {
-  background: #444;
-}
-
-/* Glitch hover effect */
-.hover-glitch:hover {
-  animation: text-flicker 0.3s linear;
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgb(var(--surface-950)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--surface-600)); }
+::-webkit-scrollbar-thumb:hover { background: #00ffcc; }
 
 /* Power-on animation for modals */
 .retro-modal-enter {

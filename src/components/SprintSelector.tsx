@@ -34,8 +34,8 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
   });
 
   return (
-    <header className="bg-[#0d0d0d] border-b-2 border-[#222] shrink-0">
-      <div className="px-5 py-3 flex items-center justify-between border-b border-[#1a1a1a]">
+    <header className="bg-surface-900 border-b-2 border-surface-700 shrink-0">
+      <div className="px-5 py-3 flex items-center justify-between border-b border-surface-800">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 border-2 border-primary bg-[#0a1a14] flex items-center justify-center font-bold text-sm text-primary animate-glow-pulse">
             <span className="animate-text-flicker">S</span>
@@ -44,7 +44,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
         </div>
         <button
           onClick={toggle}
-          className="flex items-center gap-2 text-surface-500 hover:text-primary bg-[#111] hover:bg-[#1a1a1a] px-3 py-1.5 text-xs transition-colors border border-[#333] hover:border-primary/50"
+          className="flex items-center gap-2 text-surface-500 hover:text-primary bg-surface-800 hover:bg-surface-700 px-3 py-1.5 text-xs transition-colors border border-surface-600 hover:border-primary/50"
           title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
         >
           {theme === 'dark' ? (
@@ -63,7 +63,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
           return (
             <div key={sprint.id} className="flex items-center shrink-0">
               {hasPrev && (
-                <span className="text-[#333] mx-1 font-mono text-xs">&gt;</span>
+                <span className="text-surface-600 mx-1 font-mono text-xs">&gt;</span>
               )}
 
               <button
@@ -72,7 +72,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
                 className={`group relative flex items-center gap-2 px-4 py-2 transition-all shrink-0 border-2 ${
                   isActive
                     ? 'bg-[#0a1a14] border-primary text-primary shadow-[0_0_10px_rgba(0,255,204,0.2)]'
-                    : 'bg-[#111] border-[#222] text-surface-400 hover:border-[#444] hover:text-surface-100'
+                    : 'bg-surface-800 border-surface-700 text-surface-400 hover:border-surface-500 hover:text-surface-100'
                 }`}
               >
                 <span className="text-xs font-semibold truncate max-w-28 tracking-wider">{sprint.name}</span>
@@ -84,18 +84,14 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
                 )}
 
                 <span className="text-[9px] opacity-40 flex items-center gap-1 shrink-0 font-mono">
-                  <span className="flex items-center gap-0.5">
-                    &#x2630;{sprint.lists.length}
-                  </span>
-                  <span className="flex items-center gap-0.5">
-                    &#x25A3;{sprint.lists.reduce((sum, l) => sum + l.cards.length, 0)}
-                  </span>
+                  <span className="flex items-center gap-0.5">&#x2630;{sprint.lists.length}</span>
+                  <span className="flex items-center gap-0.5">&#x25A3;{sprint.lists.reduce((sum, l) => sum + l.cards.length, 0)}</span>
                 </span>
 
                 {sprints.length > 1 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); deleteSprint(sprint.id); }}
-                    className="opacity-0 group-hover:opacity-100 text-[#555] hover:text-red-500 transition-all text-xs leading-none ml-0.5 font-mono"
+                    className="opacity-0 group-hover:opacity-100 text-surface-500 hover:text-red-500 transition-all text-xs leading-none ml-0.5 font-mono"
                     title="Eliminar sprint"
                   >[x]</span>
                 )}
@@ -112,12 +108,8 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
         </button>
       </div>
 
-      {showNewModal && (
-        <SprintModal onClose={() => setShowNewModal(false)} />
-      )}
-      {editingSprint && (
-        <SprintModal sprint={editingSprint} onClose={() => setEditingSprint(null)} />
-      )}
+      {showNewModal && <SprintModal onClose={() => setShowNewModal(false)} />}
+      {editingSprint && <SprintModal sprint={editingSprint} onClose={() => setEditingSprint(null)} />}
     </header>
   );
 }

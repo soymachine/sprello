@@ -15,7 +15,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <KanbanProvider>
-        <div className="h-screen bg-surface-950 text-surface-50 flex flex-col overflow-hidden">
+        <div className="h-screen bg-[#0a0a0a] text-surface-50 flex flex-col overflow-hidden relative">
           <SprintSelector onOpenCard={setModalCard} />
           <KanbanBoard onOpenCard={setModalCard} />
           {modalCard && (

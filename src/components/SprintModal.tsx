@@ -1,19 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo, forwardRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import DatePicker from 'react-datepicker';
 import { v4 as uuidv4 } from 'uuid';
 import { useKanban } from '../store/KanbanContext';
 import type { Sprint } from '../types';
-
-const DateInput = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  (props, ref) => (
-    <input
-      {...props}
-      ref={ref}
-      className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-50 outline-none focus:border-primary-500/50 placeholder-surface-500"
-    />
-  )
-);
-DateInput.displayName = 'DateInput';
 
 interface Props {
   sprint?: Sprint;
@@ -80,7 +69,7 @@ export default function SprintModal({ sprint, onClose }: Props) {
   const handleSubmit = () => {
     if (!name.trim()) return;
     if (start && end && start > end) {
-      setError('La fecha de inicio debe ser anterior a la de fin');
+      setError('[ERROR] La fecha de inicio debe ser anterior a la de fin');
       return;
     }
     const sStr = formatDateStr(start);
@@ -91,7 +80,7 @@ export default function SprintModal({ sprint, onClose }: Props) {
       const check = getDatesInRange(sStr, eStr);
       return check.some(d => existing.some(bd => bd.toDateString() === d.toDateString()));
     })) {
-      setError('Las fechas se solapan con otro sprint');
+      setError('[ERROR] Las fechas se solapan con otro sprint');
       return;
     }
 
@@ -111,88 +100,91 @@ export default function SprintModal({ sprint, onClose }: Props) {
     onClose();
   };
 
-  const dpProps = {
-    dateFormat: 'dd/MM/yy',
-    customInput: <DateInput />,
-    popperPlacement: 'bottom-start' as const,
-    popperClassName: '!z-[100]',
-  };
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[2px]"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md shadow-2xl shadow-black/30 mx-4">
-        <div className="px-5 py-4 border-b border-surface-600/50 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-surface-50">
-            {isEditing ? 'Editar Sprint' : 'Nuevo Sprint'}
+      <div className="retro-modal-enter bg-[#0d0d0d] border-2 border-[#333] w-full max-w-md shadow-[0_0_30px_rgba(0,255,204,0.1)] mx-4">
+        <div className="px-5 py-4 border-b-2 border-[#222] flex items-center justify-between bg-[#0a0a0a]">
+          <h2 className="text-sm font-semibold text-primary font-mono tracking-wider">
+            {isEditing ? '&gt; EDITAR_SPRINT' : '&gt; NUEVO_SPRINT'}
           </h2>
-          <button onClick={onClose} className="text-surface-400 hover:text-surface-100 p-1 rounded-lg hover:bg-surface-700 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button onClick={onClose} className="text-[#555] hover:text-primary p-1 transition-colors font-mono text-lg leading-none">
+            [X]
           </button>
         </div>
 
         <div className="px-5 py-4 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-surface-400 mb-1.5">Nombre</label>
+            <label className="block text-[10px] font-semibold text-[#555] mb-1.5 font-mono tracking-widest uppercase">
+              &gt; Nombre_
+            </label>
             <input
               ref={nameRef}
               value={name}
               onChange={e => { setName(e.target.value); setError(''); }}
               onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              className="w-full bg-surface-700 border border-surface-600 rounded-lg px-3 py-2 text-sm text-surface-50 outline-none focus:border-primary-500/50 placeholder-surface-500"
+              className="w-full bg-[#0a0a0a] border-2 border-[#333] px-3 py-2 text-sm text-surface-100 outline-none focus:border-primary placeholder-[#333] font-mono"
               placeholder="Nombre del sprint"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-surface-400 mb-1.5">Fechas</label>
+            <label className="block text-[10px] font-semibold text-[#555] mb-1.5 font-mono tracking-widest uppercase">
+              &gt; Fechas_
+            </label>
             <div className="flex items-center gap-2">
-              <DatePicker
-                selected={start}
-                onChange={d => { setStart(d); setError(''); }}
-                selectsStart
-                startDate={start ?? undefined}
-                endDate={end ?? undefined}
-                filterDate={d => !isDateBlocked(d)}
-                placeholderText="Inicio"
-                {...dpProps}
-              />
-              <span className="text-surface-500 text-sm">-</span>
-              <DatePicker
-                selected={end}
-                onChange={d => { setEnd(d); setError(''); }}
-                selectsEnd
-                startDate={start ?? undefined}
-                endDate={end ?? undefined}
-                minDate={start ?? undefined}
-                filterDate={d => !isDateBlocked(d)}
-                placeholderText="Fin"
-                {...dpProps}
-              />
+              <div className="flex-1 bg-[#0a0a0a] border-2 border-[#333] px-3 py-2 focus-within:border-primary">
+                <DatePicker
+                  selected={start}
+                  onChange={d => { setStart(d); setError(''); }}
+                  selectsStart
+                  startDate={start ?? undefined}
+                  endDate={end ?? undefined}
+                  filterDate={d => !isDateBlocked(d)}
+                  placeholderText="INICIO"
+                  dateFormat="dd/MM/yy"
+                  className="bg-transparent text-sm text-surface-100 outline-none w-full font-mono"
+                  wrapperClassName="w-full"
+                />
+              </div>
+              <span className="text-[#555] text-sm font-mono">-</span>
+              <div className="flex-1 bg-[#0a0a0a] border-2 border-[#333] px-3 py-2 focus-within:border-primary">
+                <DatePicker
+                  selected={end}
+                  onChange={d => { setEnd(d); setError(''); }}
+                  selectsEnd
+                  startDate={start ?? undefined}
+                  endDate={end ?? undefined}
+                  minDate={start ?? undefined}
+                  filterDate={d => !isDateBlocked(d)}
+                  placeholderText="FIN"
+                  dateFormat="dd/MM/yy"
+                  className="bg-transparent text-sm text-surface-100 outline-none w-full font-mono"
+                  wrapperClassName="w-full"
+                />
+              </div>
             </div>
           </div>
 
           {error && (
-            <p className="text-red-400 text-xs bg-red-400/10 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-red-500 text-[10px] bg-red-500/5 border-l-2 border-red-500 px-3 py-2 font-mono">{error}</p>
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-surface-600/50 flex justify-end gap-2">
+        <div className="px-5 py-3 border-t-2 border-[#222] flex justify-end gap-2 bg-[#0a0a0a]">
           <button
             onClick={onClose}
-            className="text-surface-400 hover:text-surface-100 text-sm font-medium px-4 py-2 rounded-lg hover:bg-surface-700 transition-colors"
+            className="text-[#555] hover:text-surface-100 text-xs font-semibold px-4 py-2 transition-colors font-mono tracking-wider"
           >
-            Cancelar
+            [CANCEL]
           </button>
           <button
             onClick={handleSubmit}
-            className="bg-accent-500 hover:bg-accent-400 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="bg-[#0a1a14] hover:bg-[#0d2a1f] text-primary border-2 border-primary/40 hover:border-primary text-xs font-semibold px-4 py-2 transition-all font-mono tracking-wider"
           >
-            {isEditing ? 'Guardar' : 'Crear Sprint'}
+            {isEditing ? '&gt; GUARDAR' : '&gt; CREAR'}
           </button>
         </div>
       </div>

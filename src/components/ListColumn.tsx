@@ -40,9 +40,7 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
     const trimmed = name.trim();
     if (trimmed && trimmed !== list.name) {
       dispatch({ type: 'UPDATE_LIST', payload: { sprintId, listId: list.id, name: trimmed } });
-    } else {
-      setName(list.name);
-    }
+    } else { setName(list.name); }
     setEditingName(false);
   };
 
@@ -95,39 +93,32 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
     onDragStart?.(list.id, list.name, list.cards.length, e);
   };
 
-  const handleListDragEnd = () => {
-    // The board handles the drop via its own dragEnd state
-  };
-
   const completedCards = list.cards.filter(c =>
     c.tasks.length > 0 && c.tasks.every(t => t.completed)
   ).length;
 
+  const borderClass = isTarget
+    ? 'border-2 border-primary shadow-[0_0_15px_rgba(0,255,204,0.25)] bg-[#0a1a14]'
+    : dragOver
+    ? 'border-2 border-dashed border-primary/40 bg-[#0a1210]'
+    : 'border-2 border-[#1a1a1a] bg-[#0d0d0d]';
+
   return (
     <div
       ref={listRef}
-      className={`w-72 shrink-0 flex flex-col rounded-xl transition-all max-h-full ${
-        isTarget
-          ? 'bg-accent-500/10 border-2 border-accent-400/60 shadow-lg shadow-accent-500/20'
-          : dragOver
-          ? 'bg-primary-500/10 border-2 border-dashed border-primary-400'
-          : 'bg-surface-800/40 border border-surface-700/50'
-      }`}
+      className={`w-72 shrink-0 flex flex-col transition-all max-h-full ${borderClass}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="flex items-center gap-1 px-3 pt-3 pb-2">
+      <div className="flex items-center gap-1 px-3 pt-3 pb-2 border-b border-[#1a1a1a]">
         <div
           draggable
           onDragStart={handleListDragStart}
-          onDragEnd={handleListDragEnd}
-          className="cursor-grab active:cursor-grabbing text-surface-500 hover:text-surface-300 transition-colors p-0.5 rounded hover:bg-surface-700/50 shrink-0"
+          className="cursor-grab active:cursor-grabbing text-[#444] hover:text-primary transition-colors p-0.5 shrink-0"
           title="Arrastrar para reordenar"
         >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 18a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 18a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
-          </svg>
+          <span className="text-[10px] font-mono select-none leading-none">:::</span>
         </div>
         {editingName ? (
           <input
@@ -139,46 +130,32 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
               if (e.key === 'Enter') handleSaveName();
               if (e.key === 'Escape') { setName(list.name); setEditingName(false); }
             }}
-            className="bg-surface-700 rounded px-2 py-1 text-sm font-semibold outline-none border border-primary-500/50 flex-1"
+            className="bg-[#0a0a0a] border border-[#333] px-2 py-1 text-xs font-semibold outline-none focus:border-primary flex-1 font-mono"
           />
         ) : (
           <button
             onDoubleClick={() => setEditingName(true)}
-            className="text-sm font-semibold text-surface-200 hover:text-surface-50 truncate flex-1 text-left px-1"
+            className="text-xs font-semibold text-surface-300 hover:text-primary truncate flex-1 text-left px-1 font-mono tracking-wider"
             title="Doble clic para renombrar"
           >
-            {list.name}
+            {list.name.toUpperCase()}
           </button>
         )}
         <div className="flex items-center gap-0.5">
-          <span className="text-xs text-surface-500 bg-surface-700 rounded-full px-1.5 py-0.5">
-            {list.cards.length}
-          </span>
-          <button
-            onClick={deleteList}
-            className="text-surface-500 hover:text-red-400 text-sm px-1 py-0.5 transition-colors"
-            title="Eliminar lista"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+          <span className="text-[9px] text-[#444] font-mono">{list.cards.length}</span>
+          <button onClick={deleteList} className="text-[#333] hover:text-red-500 text-xs px-1 transition-colors font-mono" title="Eliminar">
+            [x]
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 pb-1 space-y-2 min-h-0">
+      <div className="flex-1 overflow-y-auto px-3 pb-1 space-y-2 min-h-0 pt-1">
         {list.cards.map(card => (
-          <CardItem
-            key={card.id}
-            sprintId={sprintId}
-            listId={list.id}
-            card={card}
-            onOpenCard={onOpenCard}
-          />
+          <CardItem key={card.id} sprintId={sprintId} listId={list.id} card={card} onOpenCard={onOpenCard} />
         ))}
 
         {addingCard && (
-          <div className="bg-surface-700/50 rounded-lg p-2">
+          <div className="bg-[#0a0a0a] border border-[#222] p-2">
             <textarea
               ref={cardInputRef}
               value={newCardName}
@@ -187,37 +164,24 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddCard(); }
                 if (e.key === 'Escape') { setAddingCard(false); setNewCardName(''); }
               }}
-              className="w-full bg-surface-600 rounded-lg px-3 py-2 text-sm outline-none border border-primary-500/30 resize-none placeholder-surface-400"
-              placeholder="Nombre de la tarjeta..."
+              className="w-full bg-[#050505] border border-[#333] px-3 py-2 text-xs outline-none focus:border-primary resize-none placeholder-[#333] font-mono"
+              placeholder="&gt; nombre_tarjeta"
               rows={2}
             />
             <div className="flex gap-2 mt-2">
-              <button
-                onClick={handleAddCard}
-                className="bg-primary-500 hover:bg-primary-400 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
-              >
-                Añadir
-              </button>
-              <button
-                onClick={() => { setAddingCard(false); setNewCardName(''); }}
-                className="text-surface-400 hover:text-surface-300 text-xs px-2 py-1"
-              >
-                Cancelar
-              </button>
+              <button onClick={handleAddCard} className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 hover:border-primary/50 text-[10px] px-3 py-1.5 font-semibold transition-colors font-mono tracking-wider">ADD</button>
+              <button onClick={() => { setAddingCard(false); setNewCardName(''); }} className="text-[#555] hover:text-surface-300 text-[10px] px-2 py-1 font-mono">CANCEL</button>
             </div>
           </div>
         )}
       </div>
 
-      <div className="px-3 pb-3 pt-1">
+      <div className="px-3 pb-3 pt-1 border-t border-[#1a1a1a]">
         <button
           onClick={() => setAddingCard(true)}
-          className="w-full text-left text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors flex items-center gap-1.5"
+          className="w-full text-left text-[10px] text-[#444] hover:text-primary transition-colors flex items-center gap-1 font-mono tracking-wider"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Añadir tarjeta
+          <span className="text-sm">+</span> NEW_CARD
         </button>
       </div>
     </div>

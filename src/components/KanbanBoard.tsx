@@ -26,7 +26,6 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   const activeSprintRef = useRef(activeSprint);
   const listInputRef = useRef<HTMLInputElement>(null);
   const listsContainerRef = useRef<HTMLDivElement>(null);
-  const boardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { activeSprintRef.current = activeSprint; }, [activeSprint]);
   useEffect(() => { dragStateRef.current = dragState; }, [dragState]);
@@ -76,10 +75,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       if (ds && targetId && sprint) {
         const targetIndex = sprint.lists.findIndex(l => l.id === targetId);
         if (targetIndex !== -1) {
-          dispatch({
-            type: 'MOVE_LIST',
-            payload: { sprintId: sprint.id, listId: ds.listId, toIndex: targetIndex },
-          });
+          dispatch({ type: 'MOVE_LIST', payload: { sprintId: sprint.id, listId: ds.listId, toIndex: targetIndex } });
         }
       }
       setDragState(null);
@@ -92,11 +88,11 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   if (!activeSprint) {
     return (
       <main className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-6">&#x1F4CB;</div>
-          <h2 className="text-2xl font-semibold text-surface-300 mb-2">No hay sprints</h2>
-          <p className="text-surface-500 max-w-md">
-            Crea tu primer sprint haciendo clic en <span className="text-accent-400 font-medium">+ Sprint</span> en la barra superior.
+        <div className="text-center font-mono">
+          <div className="text-5xl mb-6 text-primary/30 animate-pulse">[&nbsp;&nbsp;]</div>
+          <h2 className="text-lg font-semibold text-[#555] mb-2 font-mono">&gt; NO_SPRINTS_FOUND</h2>
+          <p className="text-[#444] max-w-md text-xs">
+            Presiona <span className="text-primary/70 font-semibold">+ SPRINT</span> en la barra superior para inicializar.
           </p>
         </div>
       </main>
@@ -117,14 +113,9 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const state: DragState = {
-      listId,
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      width: rect.width,
-      offsetX: e.clientX - rect.left,
-      offsetY: e.clientY - rect.top,
-      listName,
-      cardCount,
+      listId, mouseX: e.clientX, mouseY: e.clientY,
+      width: rect.width, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+      listName, cardCount,
     };
     dragStateRef.current = state;
     setDragState(state);
@@ -150,8 +141,7 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
 
   return (
     <main
-      ref={boardRef}
-      className="flex-1 overflow-x-auto overflow-y-hidden p-5 relative"
+      className="flex-1 overflow-x-auto overflow-y-hidden p-5 relative bg-[#0a0a0a]"
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
@@ -172,8 +162,8 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
                 />
               </div>
               {isDragging && (
-                <div className="absolute inset-0 w-72 bg-surface-800/20 rounded-xl border-2 border-dashed border-surface-600/40 flex items-center justify-center pointer-events-none">
-                  <span className="text-surface-500 text-xs">Moviendo...</span>
+                <div className="absolute inset-0 w-72 bg-[#0a0a0a]/60 border-2 border-dashed border-[#333] flex items-center justify-center pointer-events-none">
+                  <span className="text-[#555] text-xs font-mono tracking-widest animate-pulse">[&nbsp;&nbsp;]</span>
                 </div>
               )}
             </div>
@@ -181,24 +171,23 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
         })}
 
         {addingList ? (
-          <div className="w-72 shrink-0 bg-surface-800/50 rounded-xl border border-surface-700 p-4">
+          <div className="w-72 shrink-0 bg-[#111] border-2 border-primary/40 p-4">
             <input
               ref={listInputRef}
               value={newListName}
               onChange={e => setNewListName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleAddList(); if (e.key === 'Escape') setAddingList(false); }}
-              className="w-full bg-surface-700 rounded-lg px-3 py-2 text-sm outline-none border border-primary-500/50 placeholder-surface-400"
-              placeholder="Nombre de la lista"
+              className="w-full bg-[#0a0a0a] border-2 border-[#333] px-3 py-2 text-xs outline-none focus:border-primary placeholder-[#333] font-mono"
+              placeholder="&gt; nombre_lista"
             />
             <div className="flex gap-2 mt-3">
-              <button onClick={handleAddList} className="bg-primary-500 hover:bg-primary-400 text-white text-xs px-4 py-1.5 rounded-lg font-medium transition-colors">Añadir</button>
-              <button onClick={() => { setAddingList(false); setNewListName(''); }} className="text-surface-400 hover:text-surface-300 text-xs px-3 py-1.5">Cancelar</button>
+              <button onClick={handleAddList} className="bg-primary/10 hover:bg-primary/20 text-primary border-2 border-primary/40 hover:border-primary/60 text-[10px] px-4 py-1.5 font-semibold transition-colors font-mono tracking-wider">ADD</button>
+              <button onClick={() => { setAddingList(false); setNewListName(''); }} className="text-[#555] hover:text-surface-300 text-[10px] px-3 py-1.5 font-mono tracking-wider">CANCEL</button>
             </div>
           </div>
         ) : (
-          <button onClick={() => setAddingList(true)} className="w-72 shrink-0 bg-surface-800/20 hover:bg-surface-800/40 border border-dashed border-surface-600 hover:border-surface-500 rounded-xl p-4 text-surface-400 hover:text-surface-300 text-sm font-medium transition-all flex items-center justify-center gap-2 mt-0.5">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            Añadir lista
+          <button onClick={() => setAddingList(true)} className="w-72 shrink-0 bg-[#0a0a0a] hover:bg-[#111] border-2 border-dashed border-[#333] hover:border-[#555] p-4 text-[#555] hover:text-surface-400 text-xs font-medium transition-all flex items-center justify-center gap-2 mt-0.5 font-mono tracking-wider">
+            <span className="text-base">+</span> ADD_LIST
           </button>
         )}
       </div>
@@ -210,24 +199,19 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
             left: dragState.mouseX - dragState.offsetX,
             top: dragState.mouseY - dragState.offsetY,
             width: dragState.width,
-            transform: 'rotate(20deg)',
-            opacity: 0.5,
+            transform: 'rotate(2deg)',
+            opacity: 0.6,
           }}
         >
-          <div className="w-full bg-surface-800 border-2 border-primary-400/50 rounded-xl shadow-2xl shadow-primary-500/20 overflow-hidden">
-            <div className="px-3 pt-3 pb-2 flex items-center gap-1">
-              <div className="w-4 h-4 text-surface-500 flex items-center">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM8 18a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM16 18a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
-                </svg>
-              </div>
-              <div className="text-sm font-semibold text-surface-200 truncate">{dragState.listName}</div>
-              <div className="text-xs text-surface-500 bg-surface-700 rounded-full px-1.5 py-0.5 ml-auto">{dragState.cardCount}</div>
+          <div className="w-full bg-[#111] border-2 border-primary/40 shadow-[0_0_20px_rgba(0,255,204,0.15)]">
+            <div className="px-3 pt-3 pb-2 flex items-center gap-1 border-b border-[#222]">
+              <span className="text-[#555] text-xs font-mono tracking-widest">{dragState.listName.toUpperCase()}</span>
+              <span className="text-[#444] text-[10px] font-mono ml-auto">[{dragState.cardCount}]</span>
             </div>
-            <div className="px-3 pb-3 space-y-2">
-              {Array.from({ length: Math.min(dragState.cardCount, 4) }).map((_, i) => (
-                <div key={i} className="bg-surface-700/80 rounded-lg px-3 py-2.5">
-                  <div className={`h-2 bg-surface-500/40 rounded ${i % 2 === 0 ? 'w-full' : 'w-3/4'}`} />
+            <div className="px-3 pb-3 pt-2 space-y-2">
+              {Array.from({ length: Math.min(dragState.cardCount, 3) }).map((_, i) => (
+                <div key={i} className="bg-[#0a0a0a] border border-[#222] px-3 py-2.5">
+                  <div className={`h-1.5 bg-[#1a1a1a] ${i % 2 === 0 ? 'w-full' : 'w-3/4'}`} />
                 </div>
               ))}
             </div>

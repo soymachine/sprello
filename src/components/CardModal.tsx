@@ -29,10 +29,7 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
   const taskInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (card) {
-      setEditName(card.name);
-      setEditDesc(card.description);
-    }
+    if (card) { setEditName(card.name); setEditDesc(card.description); }
   }, [card]);
 
   useEffect(() => {
@@ -52,8 +49,8 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
 
   if (!card) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-        <div className="text-surface-50 text-lg">Tarjeta no encontrada</div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90" onClick={onClose}>
+        <div className="text-[#555] text-sm font-mono">[ERROR] TARJETA_NO_ENCONTRADA</div>
       </div>
     );
   }
@@ -76,13 +73,7 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
   const addComment = () => {
     const trimmed = newComment.trim();
     if (!trimmed) return;
-    dispatch({
-      type: 'ADD_COMMENT',
-      payload: {
-        sprintId, listId, cardId,
-        comment: { id: uuidv4(), text: trimmed, createdAt: Date.now() },
-      },
-    });
+    dispatch({ type: 'ADD_COMMENT', payload: { sprintId, listId, cardId, comment: { id: uuidv4(), text: trimmed, createdAt: Date.now() } } });
     setNewComment('');
   };
 
@@ -93,13 +84,7 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
   const addTask = () => {
     const trimmed = newTask.trim();
     if (!trimmed) return;
-    dispatch({
-      type: 'ADD_TASK',
-      payload: {
-        sprintId, listId, cardId,
-        task: { id: uuidv4(), text: trimmed, completed: false },
-      },
-    });
+    dispatch({ type: 'ADD_TASK', payload: { sprintId, listId, cardId, task: { id: uuidv4(), text: trimmed, completed: false } } });
     setNewTask('');
     setAddingTask(false);
   };
@@ -111,9 +96,7 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
 
   const completedTasks = card.tasks.filter(t => t.completed).length;
   const totalTasks = card.tasks.length;
-
   const getListName = () => list?.name ?? '';
-
   const formatTime = (ts: number) => {
     const d = new Date(ts);
     return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -121,20 +104,14 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm pt-[10vh] overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/80 backdrop-blur-[2px] pt-[8vh] overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        ref={modalRef}
-        className="bg-surface-800 border border-surface-700 rounded-2xl w-full max-w-2xl shadow-2xl shadow-black/40 mx-4 mb-8 overflow-hidden"
-      >
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-surface-700/50 flex items-start gap-4">
+      <div ref={modalRef} className="retro-modal-enter bg-[#0d0d0d] border-2 border-[#333] w-full max-w-2xl shadow-[0_0_40px_rgba(0,255,204,0.08)] mx-4 mb-8">
+        <div className="px-6 py-4 border-b-2 border-[#222] flex items-start gap-4 bg-[#0a0a0a]">
           <div className="flex-1">
-            <div className="text-xs text-surface-500 mb-1">
-              En lista <span className="text-surface-400 font-medium">{getListName()}</span>
-              &nbsp;&middot;&nbsp;
-              <span className="text-surface-400">Sprint: {sprint?.name}</span>
+            <div className="text-[9px] text-[#444] mb-1 font-mono tracking-wider">
+              <span className="text-[#555]">SPRINT:</span> {sprint?.name} <span className="text-[#555]">LIST:</span> {getListName()}
             </div>
             {editingName ? (
               <div className="flex gap-2">
@@ -143,39 +120,20 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
                   onChange={e => setEditName(e.target.value)}
                   onBlur={saveName}
                   onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setEditName(card.name); setEditingName(false); } }}
-                  className="bg-surface-700 rounded-lg px-3 py-1.5 text-lg font-semibold outline-none border border-primary-500/50 flex-1"
+                  className="bg-[#050505] border border-[#333] px-3 py-1.5 text-base font-semibold outline-none focus:border-primary flex-1 font-mono"
                   autoFocus
                 />
-                <button onClick={saveName} className="text-primary-400 hover:text-primary-300 text-sm px-2">Guardar</button>
+                <button onClick={saveName} className="text-primary hover:text-primary/70 text-xs px-2 font-mono">SAVE</button>
               </div>
             ) : (
-              <h2
-                className="text-xl font-semibold cursor-pointer hover:text-primary-400 transition-colors"
-                onDoubleClick={() => setEditingName(true)}
-                title="Doble clic para renombrar"
-              >
+              <h2 className="text-lg font-semibold cursor-pointer hover:text-primary transition-colors font-mono" onDoubleClick={() => setEditingName(true)} title="Doble clic para renombrar">
                 {card.name}
               </h2>
             )}
           </div>
           <div className="flex items-center gap-1">
-            <button
-              onClick={deleteCard}
-              className="text-surface-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-surface-700 transition-colors"
-              title="Eliminar tarjeta"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
-            <button
-              onClick={onClose}
-              className="text-surface-400 hover:text-surface-50 p-1.5 rounded-lg hover:bg-surface-700 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <button onClick={deleteCard} className="text-[#444] hover:text-red-500 p-1.5 transition-colors font-mono text-xs" title="Eliminar">[DEL]</button>
+            <button onClick={onClose} className="text-[#444] hover:text-surface-100 p-1.5 transition-colors font-mono text-xs">[X]</button>
           </div>
         </div>
 
@@ -183,44 +141,28 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
           {/* Description */}
           <section>
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-              </svg>
-              <h3 className="text-sm font-semibold text-surface-200">Descripción</h3>
+              <span className="text-[#555] text-xs font-mono tracking-wider">&gt; DESC_</span>
             </div>
             {editingDesc ? (
               <div>
                 <textarea
                   value={editDesc}
                   onChange={e => setEditDesc(e.target.value)}
-                  className="w-full bg-surface-700 rounded-lg px-3 py-2 text-sm outline-none border border-primary-500/30 resize-none placeholder-surface-500 min-h-[80px]"
-                  placeholder="Añade una descripción..."
+                  className="w-full bg-[#050505] border border-[#333] px-3 py-2 text-xs outline-none focus:border-primary resize-none placeholder-[#333] min-h-[80px] font-mono"
+                  placeholder="&gt; escribe_descripcion"
                   autoFocus
                 />
                 <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={saveDesc}
-                    className="bg-primary-500 hover:bg-primary-400 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
-                  >
-                    Guardar
-                  </button>
-                  <button
-                    onClick={() => { setEditingDesc(false); setEditDesc(card.description); }}
-                    className="text-surface-400 hover:text-surface-300 text-xs px-2 py-1"
-                  >
-                    Cancelar
-                  </button>
+                  <button onClick={saveDesc} className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-[10px] px-3 py-1.5 font-semibold transition-colors font-mono tracking-wider">SAVE</button>
+                  <button onClick={() => { setEditingDesc(false); setEditDesc(card.description); }} className="text-[#555] hover:text-surface-300 text-[10px] px-2 py-1 font-mono">CANCEL</button>
                 </div>
               </div>
             ) : (
-              <div
-                onClick={() => setEditingDesc(true)}
-                className="text-sm text-surface-300 cursor-pointer hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors min-h-[32px]"
-              >
+              <div onClick={() => setEditingDesc(true)} className="text-xs text-surface-300 cursor-pointer hover:bg-[#0a0a0a] border border-transparent hover:border-[#222] px-2 py-1.5 transition-colors min-h-[32px] font-mono leading-relaxed">
                 {card.description ? (
                   <p className="whitespace-pre-wrap">{card.description}</p>
                 ) : (
-                  <span className="text-surface-500">Añade una descripción...</span>
+                  <span className="text-[#333] italic">&lt;empty&gt;</span>
                 )}
               </div>
             )}
@@ -229,21 +171,15 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
           {/* Checklist */}
           <section>
             <div className="flex items-center gap-2 mb-3">
-              <svg className="w-5 h-5 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <h3 className="text-sm font-semibold text-surface-200">Checklist</h3>
+              <span className="text-[#555] text-xs font-mono tracking-wider">&gt; CHECKLIST_</span>
               {totalTasks > 0 && (
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-surface-500">{completedTasks}/{totalTasks}</span>
-                    <div className="flex-1 h-1.5 bg-surface-700 rounded-full overflow-hidden max-w-32">
-                      <div
-                        className="h-full bg-green-500 rounded-full transition-all"
-                        style={{ width: `${totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0}%` }}
-                      />
-                    </div>
-                  </div>
+                <span className="text-[10px] text-[#444] font-mono">
+                  [{completedTasks}/{totalTasks}]
+                </span>
+              )}
+              {totalTasks > 0 && (
+                <div className="flex-1 h-1 bg-[#1a1a1a] max-w-32">
+                  <div className="h-full bg-primary transition-all" style={{ width: `${(completedTasks / totalTasks) * 100}%` }} />
                 </div>
               )}
             </div>
@@ -262,28 +198,15 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
                     if (e.key === 'Enter') addTask();
                     if (e.key === 'Escape') { setAddingTask(false); setNewTask(''); }
                   }}
-                  className="flex-1 bg-surface-700 rounded-lg px-3 py-1.5 text-sm outline-none border border-primary-500/30 placeholder-surface-500"
-                  placeholder="Nombre de la tarea..."
+                  className="flex-1 bg-[#050505] border border-[#333] px-3 py-1.5 text-xs outline-none focus:border-primary placeholder-[#333] font-mono"
+                  placeholder="&gt; nombre_tarea"
                 />
-                <button
-                  onClick={addTask}
-                  className="bg-primary-500 hover:bg-primary-400 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors"
-                >
-                  Añadir
-                </button>
-                <button
-                  onClick={() => { setAddingTask(false); setNewTask(''); }}
-                  className="text-surface-400 hover:text-surface-300 text-xs px-2"
-                >
-                  Cancelar
-                </button>
+                <button onClick={addTask} className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-[10px] px-3 py-1.5 font-semibold transition-colors font-mono tracking-wider">ADD</button>
+                <button onClick={() => { setAddingTask(false); setNewTask(''); }} className="text-[#555] hover:text-surface-300 text-[10px] px-2 font-mono">CANCEL</button>
               </div>
             ) : (
-              <button
-                onClick={() => setAddingTask(true)}
-                className="w-full text-left text-sm text-surface-500 hover:text-surface-300 hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors mt-1"
-              >
-                + Añadir tarea
+              <button onClick={() => setAddingTask(true)} className="w-full text-left text-[10px] text-[#444] hover:text-primary border border-dashed border-transparent hover:border-[#333] px-2 py-1.5 transition-colors mt-1 font-mono tracking-wider">
+                + NEW_TASK
               </button>
             )}
           </section>
@@ -291,63 +214,50 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
           {/* Comments */}
           <section>
             <div className="flex items-center gap-2 mb-3">
-              <svg className="w-5 h-5 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <h3 className="text-sm font-semibold text-surface-200">Comentarios</h3>
+              <span className="text-[#555] text-xs font-mono tracking-wider">&gt; COMMENTS_</span>
             </div>
 
             <div className="flex gap-2 mt-2">
               <textarea
                 value={newComment}
                 onChange={e => setNewComment(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }
-                }}
-                className="flex-1 bg-surface-700 rounded-lg px-3 py-2 text-sm outline-none border border-surface-600 focus:border-primary-500/50 resize-none placeholder-surface-500 min-h-[36px]"
-                placeholder="Escribe un comentario..."
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }}
+                className="flex-1 bg-[#050505] border border-[#333] px-3 py-2 text-xs outline-none focus:border-primary resize-none placeholder-[#333] font-mono min-h-[36px]"
+                placeholder="&gt; escribe_comentario"
                 rows={2}
               />
               <button
                 onClick={addComment}
                 disabled={!newComment.trim()}
-                className="bg-primary-500 hover:bg-primary-400 disabled:bg-surface-700 disabled:text-surface-500 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition-colors self-end disabled:cursor-not-allowed"
+                className="bg-primary/10 hover:bg-primary/20 disabled:bg-transparent disabled:text-[#333] disabled:border-[#222] text-primary border border-primary/30 disabled:cursor-not-allowed text-[10px] px-3 py-1.5 font-semibold transition-colors self-end font-mono tracking-wider"
               >
-                Enviar
+                SEND
               </button>
             </div>
 
             {card.comments.length > 0 && (
               <div className="space-y-3 mt-4">
-                {[...card.comments]
-                  .sort((a, b) => b.createdAt - a.createdAt)
-                  .map(comment => (
-                    <div key={comment.id} className="flex gap-3 group">
-                      <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center text-xs font-bold text-primary-400 shrink-0">
-                        ?
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-surface-500">{formatTime(comment.createdAt)}</span>
-                          <button
-                            onClick={() => deleteComment(comment.id)}
-                            className="opacity-0 group-hover:opacity-100 text-surface-500 hover:text-red-400 transition-all text-xs"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
-                        <p className="text-sm text-surface-300 mt-0.5 whitespace-pre-wrap">{comment.text}</p>
-                      </div>
+                {[...card.comments].sort((a, b) => b.createdAt - a.createdAt).map(comment => (
+                  <div key={comment.id} className="flex gap-3 group border border-[#1a1a1a] bg-[#0a0a0a] p-3">
+                    <div className="w-7 h-7 border border-[#333] flex items-center justify-center text-[9px] text-[#555] shrink-0 font-mono">
+                      ??
                     </div>
-                  ))}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] text-[#444] font-mono">{formatTime(comment.createdAt)}</span>
+                        <button onClick={() => deleteComment(comment.id)} className="opacity-0 group-hover:opacity-100 text-[#555] hover:text-red-500 transition-all text-[9px] font-mono">[DEL]</button>
+                      </div>
+                      <p className="text-xs text-surface-300 mt-0.5 whitespace-pre-wrap font-mono leading-relaxed">{comment.text}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </section>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-3 border-t border-surface-700/50 text-xs text-surface-500">
-          Creada el {new Date(card.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+        <div className="px-6 py-3 border-t-2 border-[#222] text-[9px] text-[#444] font-mono bg-[#0a0a0a]">
+          CREATED: {new Date(card.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
         </div>
       </div>
     </div>

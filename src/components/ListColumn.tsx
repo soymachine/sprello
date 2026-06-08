@@ -13,28 +13,36 @@ interface Props {
 }
 
 export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, isPlaceholder, isTarget }: Props) {
-  const { dispatch } = useKanban();
+  const { state, dispatch } = useKanban();
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(list.name);
   const [addingCard, setAddingCard] = useState(false);
   const [newCardName, setNewCardName] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [showMoveMenu, setShowMoveMenu] = useState(false);
+  const moveMenuRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const cardInputRef = useRef<HTMLInputElement>(null);
 
   const createCard = createCardHelper(dispatch, sprintId, list.id);
 
-  useEffect(() => {
-    if (addingCard && cardInputRef.current) cardInputRef.current.focus();
-  }, [addingCard]);
+  useEffect(() => { if (addingCard && cardInputRef.current) cardInputRef.current.focus(); }, [addingCard]);
+  useEffect(() => { if (editingName && nameInputRef.current) { nameInputRef.current.focus(); nameInputRef.current.select(); } }, [editingName]);
 
+  // Close move menu on outside click
   useEffect(() => {
-    if (editingName && nameInputRef.current) {
-      nameInputRef.current.focus();
-      nameInputRef.current.select();
-    }
-  }, [editingName]);
+    if (!showMoveMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (moveMenuRef.current && !moveMenuRef.current.contains(e.target as Node)) {
+        setShowMoveMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showMoveMenu]);
+
+  const otherSprints = state.sprints.filter(s => s.id !== sprintId);
 
   const handleSaveName = () => {
     const trimmed = name.trim();
@@ -84,6 +92,14 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
 
   const deleteList = () => {
     dispatch({ type: 'DELETE_LIST', payload: { sprintId, listId: list.id } });
+  };
+
+  const moveListToSprint = (toSprintId: string) => {
+    dispatch({
+      type: 'MOVE_LIST_TO_SPRINT',
+      payload: { fromSprintId: sprintId, listId: list.id, toSprintId },
+    });
+    setShowMoveMenu(false);
   };
 
   const handleListDragStart = (e: React.DragEvent) => {
@@ -154,6 +170,34 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
           <span className="text-xs text-surface-500 bg-surface-700 rounded-full px-1.5 py-0.5">
             {list.cards.length}
           </span>
+          {otherSprints.length > 0 && (
+            <div className="relative" ref={moveMenuRef}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowMoveMenu(!showMoveMenu); }}
+                className="text-surface-500 hover:text-accent-400 text-xs px-1 py-0.5 transition-colors"
+                title="Mover a otro Sprint"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+              </button>
+              {showMoveMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-surface-800 border border-surface-600 rounded-xl shadow-xl z-50 py-1 min-w-[160px]">
+                  <div className="px-3 py-1.5 text-[10px] text-surface-400 font-medium uppercase tracking-wider">Mover a Sprint</div>
+                  {otherSprints.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={(e) => { e.stopPropagation(); moveListToSprint(s.id); }}
+                      className="w-full text-left px-3 py-1.5 text-xs text-surface-200 hover:bg-surface-700 hover:text-white transition-colors flex items-center gap-2"
+                    >
+                      <span className="truncate">{s.name}</span>
+                      <span className="text-[10px] text-surface-500 ml-auto">{s.lists.length} listas</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <button
             onClick={deleteList}
             className="text-surface-500 hover:text-red-400 text-sm px-1 py-0.5 transition-colors"

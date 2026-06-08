@@ -27,6 +27,7 @@ type Action =
   | { type: 'ADD_LIST'; payload: { sprintId: string; list: List } }
   | { type: 'DELETE_LIST'; payload: { sprintId: string; listId: string } }
   | { type: 'MOVE_LIST'; payload: { sprintId: string; listId: string; toIndex: number } }
+  | { type: 'MOVE_LIST_TO_SPRINT'; payload: { fromSprintId: string; listId: string; toSprintId: string } }
   | { type: 'UPDATE_LIST'; payload: { sprintId: string; listId: string; name: string } }
   | { type: 'ADD_CARD'; payload: { sprintId: string; listId: string; card: Card } }
   | { type: 'UPDATE_CARD'; payload: { sprintId: string; listId: string; cardId: string; data: Partial<Card> } }
@@ -103,6 +104,26 @@ function reducer(state: KanbanState, action: Action): KanbanState {
         ...state,
         sprints: state.sprints.map(s =>
           s.id === action.payload.sprintId ? { ...s, lists: newLists } : s
+        ),
+      };
+    }
+
+    case 'MOVE_LIST_TO_SPRINT': {
+      const { fromSprintId, listId, toSprintId } = action.payload;
+      if (fromSprintId === toSprintId) return state;
+      let movedList: import('../types').List | undefined;
+      const newSprints = state.sprints.map(s => {
+        if (s.id === fromSprintId) {
+          movedList = s.lists.find(l => l.id === listId);
+          return { ...s, lists: s.lists.filter(l => l.id !== listId) };
+        }
+        return s;
+      });
+      if (!movedList) return state;
+      return {
+        ...state,
+        sprints: newSprints.map(s =>
+          s.id === toSprintId ? { ...s, lists: [...s.lists, movedList!] } : s
         ),
       };
     }

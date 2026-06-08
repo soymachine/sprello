@@ -31,6 +31,8 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
   const [newTask, setNewTask] = useState('');
   const [addingTask, setAddingTask] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMoveMenu, setShowMoveMenu] = useState(false);
+  const moveMenuRef = useRef<HTMLDivElement>(null);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const taskInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +58,22 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, []);
+
+  useEffect(() => {
+    if (!showMoveMenu) return;
+    const h = (e: MouseEvent) => { if (moveMenuRef.current && !moveMenuRef.current.contains(e.target as Node)) setShowMoveMenu(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [showMoveMenu]);
+
+  const moveCardToList = (toListId: string) => {
+    if (toListId === listId) return;
+    dispatch({ type: 'MOVE_CARD', payload: { sprintId, fromListId: listId, toListId, cardId, toIndex: 0 } });
+    setShowMoveMenu(false);
+    onClose();
+  };
+
+  const otherLists = sprint?.lists.filter(l => l.id !== listId) ?? [];
 
   if (!card) {
     return (
@@ -166,6 +184,24 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
             )}
           </div>
           <div className="flex items-center gap-1">
+            {otherLists.length > 0 && (
+              <div className="relative" ref={moveMenuRef}>
+                <button onClick={() => setShowMoveMenu(!showMoveMenu)} className="text-surface-500 hover:text-accent-400 p-1.5 rounded-lg hover:bg-surface-700 transition-colors" title="Mover a otra lista">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2h5a2 2 0 012 2v1" /></svg>
+                </button>
+                {showMoveMenu && (
+                  <div className="absolute right-0 top-full mt-1 bg-surface-800 border border-surface-600 rounded-xl shadow-xl z-50 py-1 min-w-[140px]">
+                    <div className="px-3 py-1.5 text-[10px] text-surface-400 font-medium uppercase tracking-wider">Mover a lista</div>
+                    {otherLists.map(l => (
+                      <button key={l.id} onClick={() => moveCardToList(l.id)} className="w-full text-left px-3 py-1.5 text-xs text-surface-200 hover:bg-surface-700 hover:text-white transition-colors flex items-center gap-2">
+                        <span className="truncate">{l.name}</span>
+                        <span className="text-[10px] text-surface-500 ml-auto">{l.cards.length}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="text-surface-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-surface-700 transition-colors"

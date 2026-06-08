@@ -11,10 +11,11 @@ interface Props {
   onDragStart?: (listId: string, listName: string, cardCount: number, e: React.DragEvent) => void;
   isPlaceholder: boolean;
   isTarget?: boolean;
-  compact?: boolean;
+  forceAddCard?: boolean;
+  onForceAddCardDone?: () => void;
 }
 
-export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, isPlaceholder, isTarget, compact }: Props) {
+export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, isPlaceholder, isTarget, forceAddCard, onForceAddCardDone }: Props) {
   const { state, dispatch } = useKanban();
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(list.name);
@@ -33,6 +34,13 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
 
   useEffect(() => { if (addingCard && cardInputRef.current) cardInputRef.current.focus(); }, [addingCard]);
   useEffect(() => { if (editingName && nameInputRef.current) { nameInputRef.current.focus(); nameInputRef.current.select(); } }, [editingName]);
+
+  useEffect(() => {
+    if (forceAddCard) {
+      setAddingCard(true);
+      onForceAddCardDone?.();
+    }
+  }, [forceAddCard]);
 
   // Close move menu on outside click
   useEffect(() => {
@@ -278,19 +286,17 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
         )}
       </div>
 
-      {!compact && (
-        <div className="px-3 pb-3 pt-1">
-          <button
-            onClick={() => setAddingCard(true)}
-            className="w-full text-left text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors flex items-center gap-1.5"
-          >
+      <div className="px-3 pb-3 pt-1">
+        <button
+          onClick={() => setAddingCard(true)}
+          className="w-full text-left text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors flex items-center gap-1.5"
+        >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Añadir tarjeta
-          </button>
-        </div>
-      )}
+        </button>
+      </div>
     </div>
     {showDeleteConfirm && (
       <ConfirmModal

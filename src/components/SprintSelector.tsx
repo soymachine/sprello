@@ -42,6 +42,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
             S
           </div>
           <span className="text-xl font-bold tracking-tight text-surface-50">Sprello</span>
+          <span className="text-[10px] text-surface-500 ml-1 font-mono">v1.1.0</span>
         </div>
         <button
           onClick={toggle}

@@ -10,6 +10,9 @@ export interface Comment {
   createdAt: number;
 }
 
+export type CardTag = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
+export type Priority = 'low' | 'medium' | 'high';
+
 export interface Card {
   id: string;
   name: string;
@@ -17,6 +20,8 @@ export interface Card {
   comments: Comment[];
   tasks: Task[];
   createdAt: number;
+  tag: CardTag | null;
+  priority: Priority | null;
 }
 
 export interface List {
@@ -37,4 +42,6 @@ export interface Sprint {
 export interface KanbanState {
   sprints: Sprint[];
   activeSprintId: string | null;
+  history: KanbanState[];
+  future: KanbanState[];
 }

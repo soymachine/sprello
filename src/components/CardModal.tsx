@@ -3,7 +3,12 @@ import { useKanban } from '../store/KanbanContext';
 import { v4 as uuidv4 } from 'uuid';
 import ChecklistItem from './ChecklistItem';
 import ConfirmModal from './ConfirmModal';
-import type { Card as CardType } from '../types';
+import type { Card as CardType, CardTag, Priority } from '../types';
+
+const TAG_HEX: Record<CardTag, string> = {
+  red: '#ef4444', blue: '#3b82f6', green: '#22c55e',
+  yellow: '#eab308', purple: '#a855f7', orange: '#f97316',
+};
 
 interface Props {
   sprintId: string;
@@ -182,6 +187,46 @@ export default function CardModal({ sprintId, listId, cardId, onClose }: Props) 
         </div>
 
         <div className="px-6 py-4 space-y-6">
+          {/* Tags & Priority */}
+          <section>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-surface-500">Etiqueta:</span>
+                <div className="flex gap-1">
+                  {(['red', 'blue', 'green', 'yellow', 'purple', 'orange'] as CardTag[]).map(color => (
+                    <button
+                      key={color}
+                      onClick={() => updateCard({ tag: card.tag === color ? null : color })}
+                      className={`w-5 h-5 border-2 transition-all ${card.tag === color ? 'border-white scale-110' : 'border-transparent opacity-40 hover:opacity-80 hover:scale-105'}`}
+                      style={{ backgroundColor: TAG_HEX[color] }}
+                      title={color}
+                    />
+                  ))}
+                  {card.tag && (
+                    <button onClick={() => updateCard({ tag: null })} className="text-surface-500 hover:text-surface-300 text-[10px] ml-1">✕</button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-surface-500">Prioridad:</span>
+                <div className="flex gap-1">
+                  {(['low', 'medium', 'high'] as Priority[]).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => updateCard({ priority: card.priority === p ? null : p })}
+                      className={`text-xs px-1.5 py-0.5 border transition-all ${card.priority === p ? 'border-surface-400 bg-surface-700' : 'border-transparent hover:border-surface-600'}`}
+                    >
+                      {p === 'high' ? '🔴' : p === 'medium' ? '🟡' : '🟢'} {p}
+                    </button>
+                  ))}
+                  {card.priority && (
+                    <button onClick={() => updateCard({ priority: null })} className="text-surface-500 hover:text-surface-300 text-[10px] ml-1">✕</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Description */}
           <section>
             <div className="flex items-center gap-2 mb-2">

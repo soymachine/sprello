@@ -11,9 +11,10 @@ interface Props {
   onDragStart?: (listId: string, listName: string, cardCount: number, e: React.DragEvent) => void;
   isPlaceholder: boolean;
   isTarget?: boolean;
+  compact?: boolean;
 }
 
-export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, isPlaceholder, isTarget }: Props) {
+export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, isPlaceholder, isTarget, compact }: Props) {
   const { state, dispatch } = useKanban();
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(list.name);
@@ -261,17 +262,19 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
         )}
       </div>
 
-      <div className="px-3 pb-3 pt-1">
-        <button
-          onClick={() => setAddingCard(true)}
-          className="w-full text-left text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors flex items-center gap-1.5"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Añadir tarjeta
-        </button>
-      </div>
+      {!compact && (
+        <div className="px-3 pb-3 pt-1">
+          <button
+            onClick={() => setAddingCard(true)}
+            className="w-full text-left text-sm text-surface-400 hover:text-surface-200 hover:bg-surface-700/50 rounded-lg px-2 py-1.5 transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Añadir tarjeta
+          </button>
+        </div>
+      )}
     </div>
     {showDeleteConfirm && (
       <ConfirmModal

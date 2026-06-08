@@ -44,6 +44,7 @@ export default function CardItem({ sprintId, listId, card, onOpenCard }: Props) 
   return (
     <div
       draggable
+      data-card-id={card.id}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={() => onOpenCard({ sprintId, listId, cardId: card.id })}

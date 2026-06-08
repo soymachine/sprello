@@ -21,6 +21,7 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
   const [addingCard, setAddingCard] = useState(false);
   const [newCardName, setNewCardName] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [showMoveMenu, setShowMoveMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const moveMenuRef = useRef<HTMLDivElement>(null);
@@ -69,11 +70,24 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOver(true);
+
+    if (!listRef.current) return;
+    const cards = listRef.current.querySelectorAll('[data-card-id]');
+    if (cards.length === 0) { setDropIndex(0); return; }
+
+    let idx = cards.length;
+    for (let i = 0; i < cards.length; i++) {
+      const rect = (cards[i] as HTMLElement).getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      if (e.clientY < midY) { idx = i; break; }
+    }
+    setDropIndex(idx);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     if (listRef.current && !listRef.current.contains(e.relatedTarget as Node)) {
       setDragOver(false);
+      setDropIndex(null);
     }
   };
 
@@ -82,15 +96,18 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
     e.preventDefault();
     setDragOver(false);
     const data = e.dataTransfer.getData('application/sprello-card');
-    if (!data) return;
+    if (!data) { setDropIndex(null); return; }
     try {
       const { sprintId: fromSprint, listId: fromList, cardId } = JSON.parse(data);
-      if (fromList === list.id) return;
-      dispatch({
-        type: 'MOVE_CARD',
-        payload: { sprintId, fromListId: fromList, toListId: list.id, cardId, toIndex: list.cards.length },
-      });
-    } catch { /* */ }
+      const toIdx = dropIndex ?? list.cards.length;
+      if (fromList === list.id && toIdx === list.cards.findIndex(c => c.id === cardId)) { setDropIndex(null); return; }
+      if (fromList === list.id && toIdx > list.cards.findIndex(c => c.id === cardId)) {
+        dispatch({ type: 'MOVE_CARD', payload: { sprintId, fromListId: fromList, toListId: list.id, cardId, toIndex: toIdx - 1 } });
+      } else {
+        dispatch({ type: 'MOVE_CARD', payload: { sprintId, fromListId: fromList, toListId: list.id, cardId, toIndex: toIdx } });
+      }
+    } catch {}
+    setDropIndex(null);
   };
 
   const deleteList = () => {
@@ -220,15 +237,14 @@ export default function ListColumn({ sprintId, list, onOpenCard, onDragStart, is
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 pb-1 space-y-2 min-h-0">
-        {list.cards.map(card => (
-          <CardItem
-            key={card.id}
-            sprintId={sprintId}
-            listId={list.id}
-            card={card}
-            onOpenCard={onOpenCard}
-          />
+        {list.cards.map((card, i) => (
+          <React.Fragment key={card.id}>
+            {dropIndex === i && <div className="h-0.5 bg-primary-400/60 rounded-full mx-1" />}
+            <CardItem sprintId={sprintId} listId={list.id} card={card} onOpenCard={onOpenCard} />
+          </React.Fragment>
         ))}
+        {dropIndex === list.cards.length && list.cards.length > 0 && <div className="h-0.5 bg-primary-400/60 rounded-full mx-1" />}
+        {list.cards.length === 0 && dragOver && <div className="h-0.5 bg-primary-400/60 rounded-full mx-1" />}
 
         {addingCard && (
           <div className="bg-surface-700/50 rounded-lg p-2">

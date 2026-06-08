@@ -65,7 +65,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center font-bold text-base shadow-lg shadow-primary-500/20">S</div>
           <span className="text-xl font-bold tracking-tight text-surface-50">Sprello</span>
-          <span className="text-[10px] text-surface-500 ml-1 font-mono">v1.4.0</span>
+          <span className="text-[10px] text-surface-500 ml-1 font-mono">v1.5.0</span>
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />

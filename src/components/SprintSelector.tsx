@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useKanban } from '../store/KanbanContext';
 import { useTheme } from '../store/themeStore';
 import SprintModal from './SprintModal';
+import Timeline from './Timeline';
 
 export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sprintId: string; listId: string; cardId: string }) => void }) {
   const { state, dispatch } = useKanban();
@@ -12,6 +13,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
   const [showNewModal, setShowNewModal] = useState(false);
   const [editingSprint, setEditingSprint] = useState<typeof sprints[0] | null>(null);
   const [dragOverSprintId, setDragOverSprintId] = useState<string | null>(null);
+  const [showTimeline, setShowTimeline] = useState(false);
 
   const deleteSprint = (id: string) => {
     if (sprints.length <= 1) return;
@@ -91,7 +93,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center font-bold text-base shadow-lg shadow-primary-500/20">S</div>
           <span className="text-xl font-bold tracking-tight text-surface-50">Sprello</span>
-          <span className="text-[10px] text-surface-500 ml-1 font-mono">v1.6.0</span>
+          <span className="text-[10px] text-surface-500 ml-1 font-mono">v1.7.0</span>
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
@@ -100,6 +102,9 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
           </button>
           <button onClick={() => fileInputRef.current?.click()} className="text-surface-500 hover:text-surface-300 text-xs px-2 py-1 transition-colors" title="Importar datos">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+          </button>
+          <button onClick={() => setShowTimeline(true)} className="text-surface-500 hover:text-surface-300 text-xs px-2 py-1 transition-colors" title="Timeline">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
           </button>
           <button onClick={toggle} className="flex items-center gap-2 text-surface-400 hover:text-surface-100 bg-surface-800 hover:bg-surface-700 rounded-lg px-3 py-1.5 text-sm transition-colors border border-surface-700" title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}>
             {theme === 'dark' ? (
@@ -152,6 +157,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
 
       {showNewModal && <SprintModal onClose={() => setShowNewModal(false)} />}
       {editingSprint && <SprintModal sprint={editingSprint} onClose={() => setEditingSprint(null)} />}
+      {showTimeline && <Timeline onClose={() => setShowTimeline(false)} />}
     </header>
   );
 }

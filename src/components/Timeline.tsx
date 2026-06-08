@@ -47,15 +47,14 @@ export default function Timeline({ onClose }: { onClose: () => void }) {
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
-  // Day numbers (abbreviated, every 7 days)
-  const dayMarkers: { label: string; day: number }[] = [];
-  for (let d = 1; d <= totalDays; d++) {
+  // Day ticks: tick for every day, label for every 7th + 1st
+  const dayMarkers: { label?: string; day: number }[] = [];
+  for (let d = 0; d <= totalDays; d++) {
     const date = new Date(minDate);
-    date.setDate(date.getDate() + d - 1);
+    date.setDate(date.getDate() + d);
     const dayNum = date.getDate();
-    if (dayNum === 1 || dayNum % 7 === 0 || d === 1 || d === totalDays) {
-      dayMarkers.push({ label: String(dayNum), day: d - 1 });
-    }
+    const showLabel = dayNum === 1 || dayNum % 7 === 0 || d === 0 || d === totalDays;
+    dayMarkers.push({ label: showLabel ? String(dayNum) : undefined, day: d });
   }
 
   const today = new Date();
@@ -87,8 +86,8 @@ export default function Timeline({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Month header row */}
-        <div className="px-6 pt-4 pb-1 relative">
-          <div className="relative h-5">
+        <div className="px-6 pt-4 pb-1">
+          <div className="pl-24 relative h-5">
             {months.map((m, i) => (
               <div key={i} className="absolute top-0 text-[9px] font-semibold text-surface-400 text-center truncate" style={{ left: `${(m.startDay / totalDays) * 100}%`, width: `${(m.days / totalDays) * 100}%` }}>
                 {m.label}
@@ -98,11 +97,15 @@ export default function Timeline({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Day markers */}
-        <div className="px-6 pb-2 relative">
-          <div className="relative h-3">
+        <div className="px-6 pb-2">
+          <div className="pl-24 relative h-4">
             {dayMarkers.map((m, i) => (
-              <div key={i} className="absolute top-0 text-[7px] text-surface-600 font-mono -translate-x-1/2 select-none" style={{ left: `${(m.day / totalDays) * 100}%` }}>
-                {m.label}
+              <div key={i} className="absolute top-0 -translate-x-1/2 select-none" style={{ left: `${(m.day / totalDays) * 100}%` }}>
+                {m.label ? (
+                  <span className="text-[7px] text-surface-500 font-mono">{m.label}</span>
+                ) : (
+                  <span className="block w-[1px] h-1.5 bg-surface-700/40 mx-auto" />
+                )}
               </div>
             ))}
           </div>
@@ -111,8 +114,10 @@ export default function Timeline({ onClose }: { onClose: () => void }) {
         {/* Today marker line */}
         {showToday && (
           <div className="px-6 relative h-0">
-            <div className="absolute top-0 bottom-0 w-[1px] bg-red-400/60" style={{ left: `${todayPct}%`, height: 'calc(100% + 8px)', transform: 'translateY(-4px)' }} />
-            <div className="absolute -top-1 text-[8px] text-red-400 font-semibold -translate-x-1/2 px-1 bg-surface-800" style={{ left: `${todayPct}%` }}>HOY</div>
+            <div className="pl-24 relative">
+              <div className="absolute top-0 bottom-0 w-[1px] bg-red-400/60" style={{ left: `${todayPct}%`, height: 'calc(100% + 8px)', transform: 'translateY(-4px)' }} />
+              <div className="absolute -top-1 text-[8px] text-red-400 font-semibold -translate-x-1/2 px-1 bg-surface-800" style={{ left: `${todayPct}%` }}>HOY</div>
+            </div>
           </div>
         )}
 

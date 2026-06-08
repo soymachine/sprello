@@ -11,11 +11,37 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
 
   const [showNewModal, setShowNewModal] = useState(false);
   const [editingSprint, setEditingSprint] = useState<typeof sprints[0] | null>(null);
+  const [dragOverSprintId, setDragOverSprintId] = useState<string | null>(null);
 
   const deleteSprint = (id: string) => {
     if (sprints.length <= 1) return;
     dispatch({ type: 'DELETE_SPRINT', payload: id });
   };
+
+  const handleSprintDragStart = (e: React.DragEvent, sprintId: string) => {
+    e.dataTransfer.setData('application/sprello-sprint', sprintId);
+    e.dataTransfer.effectAllowed = 'move';
+    const img = new Image(); img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=';
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const handleSprintDragOver = (e: React.DragEvent, sprintId: string) => {
+    if (!e.dataTransfer.types.includes('application/sprello-sprint')) return;
+    e.preventDefault();
+    setDragOverSprintId(sprintId);
+  };
+
+  const handleSprintDrop = (e: React.DragEvent, targetSprintId: string) => {
+    e.preventDefault();
+    setDragOverSprintId(null);
+    const sourceId = e.dataTransfer.getData('application/sprello-sprint');
+    if (!sourceId || sourceId === targetSprintId) return;
+    const targetIndex = sprints.findIndex(s => s.id === targetSprintId);
+    if (targetIndex === -1) return;
+    dispatch({ type: 'MOVE_SPRINT', payload: { sprintId: sourceId, toIndex: targetIndex } });
+  };
+
+  const handleSprintDragEnd = () => setDragOverSprintId(null);
 
   const handleExport = () => {
     const data = JSON.stringify(state, null, 2);
@@ -65,7 +91,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center font-bold text-base shadow-lg shadow-primary-500/20">S</div>
           <span className="text-xl font-bold tracking-tight text-surface-50">Sprello</span>
-          <span className="text-[10px] text-surface-500 ml-1 font-mono">v1.5.0</span>
+          <span className="text-[10px] text-surface-500 ml-1 font-mono">v1.6.0</span>
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileInputRef} type="file" accept=".json" onChange={handleImport} className="hidden" />
@@ -91,6 +117,15 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
           return (
             <div key={sprint.id} className="flex items-center shrink-0">
               {i > 0 && <svg className="w-3.5 h-3.5 text-surface-600 mx-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>}
+              <div
+                data-sprint-id={sprint.id}
+                draggable
+                onDragStart={(e) => handleSprintDragStart(e, sprint.id)}
+                onDragOver={(e) => handleSprintDragOver(e, sprint.id)}
+                onDrop={(e) => handleSprintDrop(e, sprint.id)}
+                onDragEnd={handleSprintDragEnd}
+                className={`shrink-0 transition-all ${dragOverSprintId === sprint.id ? 'scale-105' : ''}`}
+              >
               <button onClick={() => dispatch({ type: 'SET_ACTIVE_SPRINT', payload: sprint.id })} onDoubleClick={() => setEditingSprint(sprint)}
                 className={`group relative flex items-center gap-2 rounded-xl px-4 py-2 transition-all shrink-0 ${isActive ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/25' : 'bg-surface-800/80 text-surface-300 hover:bg-surface-700 hover:text-surface-50'}`}>
                 <span className="text-sm font-semibold truncate max-w-28">{sprint.name}</span>
@@ -106,6 +141,7 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
                 </span>
                 {sprints.length > 1 && <span onClick={(e) => { e.stopPropagation(); deleteSprint(sprint.id); }} className="opacity-0 group-hover:opacity-100 text-surface-400 hover:text-red-400 transition-all text-sm leading-none ml-0.5" title="Eliminar sprint">&times;</span>}
               </button>
+              </div>
             </div>
           );
         })}

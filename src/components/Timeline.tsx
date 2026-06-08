@@ -38,8 +38,9 @@ export default function Timeline({ onClose }: { onClose: () => void }) {
   while (cursor <= maxDate) {
     const monthStart = new Date(cursor);
     const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+    const clampedEnd = monthEnd < maxDate ? monthEnd : maxDate;
     const firstDay = daysBetween(minDate, monthStart);
-    const lastDay = Math.min(totalDays, daysBetween(minDate, Math.min(monthEnd, maxDate)));
+    const lastDay = Math.min(totalDays, daysBetween(minDate, clampedEnd));
     if (lastDay > firstDay) {
       months.push({ label: formatMonth(monthStart), startDay: firstDay, days: lastDay - firstDay + 1 });
     }

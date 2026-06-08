@@ -16,7 +16,10 @@ export default function ChecklistItem({ sprintId, listId, cardId, task }: Props)
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (editing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); }
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
   }, [editing]);
 
   const toggle = () => {
@@ -27,14 +30,22 @@ export default function ChecklistItem({ sprintId, listId, cardId, task }: Props)
   };
 
   const deleteTask = () => {
-    dispatch({ type: 'DELETE_TASK', payload: { sprintId, listId, cardId, taskId: task.id } });
+    dispatch({
+      type: 'DELETE_TASK',
+      payload: { sprintId, listId, cardId, taskId: task.id },
+    });
   };
 
   const saveEdit = () => {
     const trimmed = text.trim();
     if (trimmed && trimmed !== task.text) {
-      dispatch({ type: 'UPDATE_TASK', payload: { sprintId, listId, cardId, taskId: task.id, data: { text: trimmed } } });
-    } else { setText(task.text); }
+      dispatch({
+        type: 'UPDATE_TASK',
+        payload: { sprintId, listId, cardId, taskId: task.id, data: { text: trimmed } },
+      });
+    } else {
+      setText(task.text);
+    }
     setEditing(false);
   };
 
@@ -42,13 +53,17 @@ export default function ChecklistItem({ sprintId, listId, cardId, task }: Props)
     <div className="flex items-center gap-2 group py-1.5">
       <button
         onClick={toggle}
-        className={`w-4 h-4 border-2 flex items-center justify-center shrink-0 transition-colors ${
+        className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
           task.completed
-            ? 'bg-primary border-primary text-black text-[8px]'
-            : 'border-[#444] hover:border-primary/50'
+            ? 'bg-green-500 border-green-500'
+            : 'border-surface-500 hover:border-surface-400'
         }`}
       >
-        {task.completed && <span className="font-bold leading-none">&#x2713;</span>}
+        {task.completed && (
+          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
       </button>
 
       {editing ? (
@@ -61,11 +76,11 @@ export default function ChecklistItem({ sprintId, listId, cardId, task }: Props)
             if (e.key === 'Enter') saveEdit();
             if (e.key === 'Escape') { setText(task.text); setEditing(false); }
           }}
-          className="flex-1 bg-[#050505] border border-[#333] px-2 py-0.5 text-xs outline-none focus:border-primary font-mono"
+          className="flex-1 bg-surface-700 rounded px-2 py-0.5 text-sm outline-none border border-primary-500/30"
         />
       ) : (
         <span
-          className={`text-xs flex-1 cursor-pointer font-mono ${task.completed ? 'text-[#555] line-through decoration-primary/30' : 'text-surface-300'}`}
+          className={`text-sm flex-1 cursor-pointer ${task.completed ? 'text-surface-500 line-through' : 'text-surface-200'}`}
           onDoubleClick={() => setEditing(true)}
           title="Doble clic para editar"
         >
@@ -73,8 +88,13 @@ export default function ChecklistItem({ sprintId, listId, cardId, task }: Props)
         </span>
       )}
 
-      <button onClick={deleteTask} className="opacity-0 group-hover:opacity-100 text-[#444] hover:text-red-500 transition-all font-mono text-[10px]">
-        [x]
+      <button
+        onClick={deleteTask}
+        className="opacity-0 group-hover:opacity-100 text-surface-500 hover:text-red-400 transition-all"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
       </button>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useKanban } from '../store/KanbanContext';
+import { useKanban, useActiveSprint } from '../store/KanbanContext';
 import { useTheme } from '../store/themeStore';
 import SprintModal from './SprintModal';
 
@@ -34,28 +34,34 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
   });
 
   return (
-    <header className="bg-[#0d0d0d] border-b-2 border-[#222] shrink-0">
-      <div className="px-5 py-3 flex items-center justify-between border-b border-[#1a1a1a]">
+    <header className="bg-surface-900 border-b border-surface-700 shrink-0">
+      {/* Row 1: Logo + Name + Theme Toggle */}
+      <div className="px-5 py-3 flex items-center justify-between border-b border-surface-800">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 border-2 border-primary bg-[#0a1a14] flex items-center justify-center font-bold text-sm text-primary animate-glow-pulse">
-            <span className="animate-text-flicker">S</span>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center font-bold text-base shadow-lg shadow-primary-500/20">
+            S
           </div>
-          <span className="text-lg font-bold tracking-[0.2em] text-primary font-display text-xs">SPRELLO</span>
+          <span className="text-xl font-bold tracking-tight text-surface-50">Sprello</span>
         </div>
         <button
           onClick={toggle}
-          className="flex items-center gap-2 text-surface-500 hover:text-primary bg-[#111] hover:bg-[#1a1a1a] px-3 py-1.5 text-xs transition-colors border border-[#333] hover:border-primary/50"
+          className="flex items-center gap-2 text-surface-400 hover:text-surface-100 bg-surface-800 hover:bg-surface-700 rounded-lg px-3 py-1.5 text-sm transition-colors border border-surface-700"
           title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
         >
           {theme === 'dark' ? (
-            <span className="text-primary/70 text-xs">[LIGHT]</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
           ) : (
-            <span className="text-accent/70 text-xs">[DARK]</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
           )}
         </button>
       </div>
 
-      <div className="px-5 pb-3 pt-2 flex items-center gap-0 overflow-x-auto">
+      {/* Row 2: Sprints */}
+      <div className="px-5 pb-3 pt-2 flex items-center gap-0 overflow-x-auto scrollbar-none">
         {sortedSprints.map((sprint, i) => {
           const isActive = sprint.id === activeSprintId;
           const hasPrev = i > 0;
@@ -63,41 +69,52 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
           return (
             <div key={sprint.id} className="flex items-center shrink-0">
               {hasPrev && (
-                <span className="text-[#333] mx-1 font-mono text-xs">&gt;</span>
+                <svg className="w-3.5 h-3.5 text-surface-600 mx-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
               )}
 
               <button
                 onClick={() => dispatch({ type: 'SET_ACTIVE_SPRINT', payload: sprint.id })}
                 onDoubleClick={() => setEditingSprint(sprint)}
-                className={`group relative flex items-center gap-2 px-4 py-2 transition-all shrink-0 border-2 ${
+                className={`group relative flex items-center gap-2 rounded-xl px-4 py-2 transition-all shrink-0 ${
                   isActive
-                    ? 'bg-[#0a1a14] border-primary text-primary shadow-[0_0_10px_rgba(0,255,204,0.2)]'
-                    : 'bg-[#111] border-[#222] text-surface-400 hover:border-[#444] hover:text-surface-100'
+                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/25'
+                    : 'bg-surface-800/80 text-surface-300 hover:bg-surface-700 hover:text-surface-50'
                 }`}
               >
-                <span className="text-xs font-semibold truncate max-w-28 tracking-wider">{sprint.name}</span>
+                <span className="text-sm font-semibold truncate max-w-28">{sprint.name}</span>
 
                 {(sprint.startDate || sprint.endDate) && (
-                  <span className="text-[9px] opacity-60 flex items-center gap-1 shrink-0 font-mono">
-                    &#x25A0; {formatDate(sprint.startDate)}{sprint.startDate && sprint.endDate ? '-' : ''}{formatDate(sprint.endDate)}
+                  <span className="text-[10px] opacity-70 flex items-center gap-0.5 shrink-0">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {formatDate(sprint.startDate)}{sprint.startDate && sprint.endDate ? ' - ' : ''}{formatDate(sprint.endDate)}
                   </span>
                 )}
 
-                <span className="text-[9px] opacity-40 flex items-center gap-1 shrink-0 font-mono">
+                <span className="text-[10px] opacity-50 flex items-center gap-1 shrink-0">
                   <span className="flex items-center gap-0.5">
-                    &#x2630;{sprint.lists.length}
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                    </svg>
+                    {sprint.lists.length}
                   </span>
                   <span className="flex items-center gap-0.5">
-                    &#x25A3;{sprint.lists.reduce((sum, l) => sum + l.cards.length, 0)}
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    {sprint.lists.reduce((sum, l) => sum + l.cards.length, 0)}
                   </span>
                 </span>
 
                 {sprints.length > 1 && (
                   <span
                     onClick={(e) => { e.stopPropagation(); deleteSprint(sprint.id); }}
-                    className="opacity-0 group-hover:opacity-100 text-[#555] hover:text-red-500 transition-all text-xs leading-none ml-0.5 font-mono"
+                    className="opacity-0 group-hover:opacity-100 text-surface-400 hover:text-red-400 transition-all text-sm leading-none ml-0.5"
                     title="Eliminar sprint"
-                  >[x]</span>
+                  >&times;</span>
                 )}
               </button>
             </div>
@@ -106,9 +123,12 @@ export default function SprintSelector({ onOpenCard }: { onOpenCard: (data: { sp
 
         <button
           onClick={() => setShowNewModal(true)}
-          className="bg-[#0a1a14] hover:bg-[#0d2a1f] text-primary border-2 border-primary/30 hover:border-primary/60 px-3.5 py-2 text-xs font-semibold shrink-0 transition-all flex items-center gap-1.5 ml-1 font-mono tracking-wider"
+          className="bg-accent-500/10 hover:bg-accent-500/20 text-accent-400 border border-accent-500/30 rounded-xl px-3.5 py-2 text-sm font-semibold shrink-0 transition-all flex items-center gap-1.5 ml-1"
         >
-          <span className="text-base leading-none">+</span> SPRINT
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Sprint
         </button>
       </div>
 

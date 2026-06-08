@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useActiveSprint, useKanban, createListHelper } from '../store/KanbanContext';
 import ListColumn from './ListColumn';
-import HelpModal from './HelpModal';
 
 interface DragState { listId: string; mouseX: number; mouseY: number; width: number; offsetX: number; offsetY: number; listName: string; cardCount: number; }
 
@@ -15,7 +14,6 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
   const [targetListId, setTargetListId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [forceAddCard, setForceAddCard] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const dragStateRef = useRef<DragState | null>(null);
   const targetListIdRef = useRef<string | null>(null);
   const activeSprintRef = useRef(activeSprint);
@@ -52,12 +50,6 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
       if (e.key === 'l' || e.key === 'L') {
         e.preventDefault();
         setAddingList(true);
-        return;
-      }
-
-      if (e.key === '?' && !e.shiftKey) {
-        e.preventDefault();
-        setShowHelp(true);
         return;
       }
     };
@@ -142,7 +134,6 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
         </div>
         <button onClick={() => dispatch({ type: 'UNDO' })} disabled={!canUndo} className={`text-sm px-1.5 py-0.5 transition-colors ${canUndo ? 'text-surface-400 hover:text-surface-200' : 'text-surface-600 cursor-not-allowed'}`} title="Ctrl+Z">↩</button>
         <button onClick={() => dispatch({ type: 'REDO' })} disabled={!canRedo} className={`text-sm px-1.5 py-0.5 transition-colors ${canRedo ? 'text-surface-400 hover:text-surface-200' : 'text-surface-600 cursor-not-allowed'}`} title="Ctrl+Shift+Z">↪</button>
-        <button onClick={() => setShowHelp(true)} className="text-surface-500 hover:text-surface-300 text-sm px-1.5 py-0.5 transition-colors border border-surface-600 hover:border-surface-400" title="Ayuda">?</button>
       </div>
 
       <div className="flex-1 overflow-x-auto overflow-y-hidden px-5 pb-5 relative" onDragOver={handleDragOver} onDrop={handleDrop}>
@@ -204,8 +195,6 @@ export default function KanbanBoard({ onOpenCard }: { onOpenCard: (data: { sprin
           </div>
         )}
       </div>
-
-      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </main>
   );
 }
